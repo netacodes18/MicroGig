@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Menu, X } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import NotificationCenter from './NotificationCenter';
 
 export default function Navbar() {
   const [isMobileOpen, setIsMobileOpen] = useState(false);
@@ -12,7 +13,7 @@ export default function Navbar() {
     { name: 'FREELANCERS', path: '/freelancers' },
     { name: 'ABOUT US', path: '/about' },
     { name: user?.role === 'client' ? 'YOUR POSTINGS' : 'DOMAINS', path: '/jobs' },
-    { name: 'TESTIMONIALS', path: '/#network' },
+    { name: 'TESTIMONIALS', path: '/#testimonials' },
     { name: 'CONTACT US', path: '/contact' },
   ];
 
@@ -20,11 +21,11 @@ export default function Navbar() {
     <nav className="fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 lg:h-20">
-          
+
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2 group">
             <span className="text-xl font-bold tracking-tighter text-daInfo-dark">
-              MICRO<br/><span className="text-xs leading-none">GIG</span>
+              MICRO<br /><span className="text-xs leading-none">GIG</span>
             </span>
           </Link>
 
@@ -49,6 +50,7 @@ export default function Navbar() {
           <div className="hidden lg:flex items-center gap-6">
             {user ? (
               <div className="flex items-center gap-6">
+                <NotificationCenter />
                 <Link to="/dashboard" className="text-xs font-semibold text-gray-500 hover:text-daInfo-dark tracking-widest uppercase">
                   DASHBOARD
                 </Link>

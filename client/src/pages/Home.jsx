@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import Navbar from '../components/layout/Navbar';
@@ -135,13 +136,41 @@ function PixelBorder() {
 }
 
 export default function Home() {
+  const [freelancers, setFreelancers] = useState([]);
+  const [testimonials, setTestimonials] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [freeRes, testRes] = await Promise.all([
+          fetch('/api/users?limit=4&sort=rating'),
+          fetch('/api/reviews?limit=3&minRating=4')
+        ]);
+        
+        const [freeData, testData] = await Promise.all([
+          freeRes.json(),
+          testRes.json()
+        ]);
+
+        setFreelancers(freeData);
+        setTestimonials(testData);
+      } catch (err) {
+        console.error('Failed to fetch home data:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
+
   return (
     <div className="bg-white">
       {/* ══════════ HERO SECTION ══════════ */}
       <section className="pt-32 pb-20 px-4 da-grid-bg min-h-screen flex flex-col justify-center items-center relative border-b border-gray-200">
         <div className="max-w-4xl mx-auto text-center relative z-10 w-full">
 
-          <h1 className="da-heading text-daInfo-dark mb-8 whitespace-pre-line">
+          <h1 className="da-heading text-daInfo-dark mb-8 whitespace-pre-line text-balance">
             {'Empowering Talent that\n'}
             <span className="da-blue-text">Delivers Across</span>
             {'\nDomains'}
@@ -169,7 +198,6 @@ export default function Home() {
             AS SEEN ON
           </div>
           <div className="flex-1 flex flex-wrap items-center justify-around py-4 px-4 gap-8 grayscale opacity-60">
-            {/* Using text blocks as mock logos to respect the minimalist vibe */}
             <span className="text-xl font-bold font-serif whitespace-nowrap">BUSINESS INSIDER</span>
             <span className="text-xl font-bold font-serif whitespace-nowrap">THE INDEPENDENT</span>
             <span className="text-xl font-extrabold tracking-tighter whitespace-nowrap">TIME</span>
@@ -186,7 +214,7 @@ export default function Home() {
         {/* Features List */}
         <div className="da-feature-list border-b border-gray-800 pb-20 mb-20">
           <div>
-            <div className="w-12 h-12 border border-white rounded-full flex items-center justify-center mb-6">
+            <div className="w-12 h-12 border border-white rounded-full flex items-center justify-center mb-6 text-pink-500">
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
             </div>
             <h3 className="da-feature-item-title">100% REMOTE</h3>
@@ -194,7 +222,7 @@ export default function Home() {
           </div>
 
           <div>
-            <div className="w-12 h-12 border border-white rounded-full flex items-center justify-center mb-6">
+            <div className="w-12 h-12 border border-white rounded-full flex items-center justify-center mb-6 text-blue-500">
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
             </div>
             <h3 className="da-feature-item-title">FLEXIBLE HOURS</h3>
@@ -202,7 +230,7 @@ export default function Home() {
           </div>
 
           <div>
-            <div className="w-12 h-12 border border-white rounded-full flex items-center justify-center mb-6">
+            <div className="w-12 h-12 border border-white rounded-full flex items-center justify-center mb-6 text-green-500">
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
             </div>
             <h3 className="da-feature-item-title">START QUICKLY</h3>
@@ -210,7 +238,7 @@ export default function Home() {
           </div>
 
           <div>
-            <div className="w-12 h-12 border border-white rounded-full flex items-center justify-center mb-6">
+            <div className="w-12 h-12 border border-white rounded-full flex items-center justify-center mb-6 text-yellow-500">
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
             </div>
             <h3 className="da-feature-item-title">GET PAID</h3>
@@ -218,8 +246,8 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Job Description block closely mimicking the 3rd screenshot */}
-        <div className="max-w-7xl mx-auto px-6 grid lg:grid-cols-2 gap-16 mb-32">
+        {/* Job Description block */}
+        <div className="max-w-7xl mx-auto px-6 grid lg:grid-cols-2 gap-16 mb-32 text-left">
           <div className="pr-12">
             <h2 className="text-5xl font-medium tracking-tight mb-8">Job description</h2>
             <div className="space-y-6 text-gray-300 text-lg leading-relaxed">
@@ -232,26 +260,26 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Pay Block inside dark section */}
-          <div className="bg-[#111111] border border-gray-800 rounded-lg p-8 h-fit">
+          {/* Pay Block */}
+          <div className="bg-[#111111] border border-gray-800 p-8 h-fit da-shadow-pink">
             <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-6 mb-8 border-b border-gray-800 pb-8">
               <div>
-                <p className="text-gray-400 font-bold tracking-widest text-xs uppercase mb-2">Starting at</p>
-                <div className="text-4xl md:text-5xl font-bold text-white tracking-tighter mb-2">
+                <p className="text-gray-400 font-bold tracking-widest text-xs uppercase mb-2 text-left">Starting at</p>
+                <div className="text-4xl md:text-5xl font-bold text-white tracking-tighter mb-2 text-left">
                   $20 - $50 USD <span className="text-xl text-gray-400 font-normal">/hour</span>
                 </div>
-                <p className="text-gray-400 text-sm">+ bonuses for quality and speed</p>
+                <p className="text-gray-400 text-sm text-left font-medium uppercase tracking-widest">+ bonuses for quality and speed</p>
               </div>
-              <Link to="/signup" className="da-btn-primary self-start border-none">
+              <Link to="/signup" className="da-btn-primary self-start">
                 APPLY NOW
               </Link>
             </div>
 
             <div className="flex items-center gap-4">
-              <div className="w-10 h-10 border border-gray-600 rounded flex items-center justify-center flex-shrink-0">
+              <div className="w-10 h-10 border border-gray-600 flex items-center justify-center flex-shrink-0">
                 <svg className="w-5 h-5 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>
               </div>
-              <div>
+              <div className="text-left">
                 <p className="text-white font-bold mb-1">Working remotely</p>
                 <p className="text-gray-400 text-sm">Flexible location and hours</p>
               </div>
@@ -262,7 +290,7 @@ export default function Home() {
 
       {/* ══════════ ABOUT US ══════════ */}
       <section className="bg-white py-24 border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row gap-16 justify-between items-center">
+        <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row gap-16 justify-between items-center text-left">
           <div className="flex-1">
             <h2 className="text-4xl font-medium tracking-tight mb-8">About Us</h2>
             <div className="space-y-6 text-gray-600 text-lg">
@@ -274,7 +302,7 @@ export default function Home() {
               </p>
             </div>
           </div>
-          <div className="flex-1 w-full bg-gray-50 flex items-center justify-center aspect-[4/3] rounded-sm overflow-hidden border border-gray-200 shadow-[8px_8px_0px_0px_rgba(10,10,10,1)]">
+          <div className="flex-1 w-full bg-gray-50 flex items-center justify-center aspect-[4/3] overflow-hidden border border-gray-200 da-shadow-black">
             <FreelancerAnimation />
           </div>
         </div>
@@ -282,33 +310,33 @@ export default function Home() {
 
       {/* ══════════ OUR FREELANCERS ══════════ */}
       <section id="network" className="bg-gray-50 py-24 border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-6">
+        <div className="max-w-7xl mx-auto px-6 text-left">
           <div className="flex flex-col md:flex-row items-end justify-between mb-16">
             <div>
-              <h2 className="text-4xl font-medium tracking-tight mb-4">Our Elite Network</h2>
-              <p className="text-gray-500 text-lg max-w-2xl">Collaborate with the top 1% of independent specialists across design, engineering, and artificial intelligence.</p>
+              <h2 className="text-4xl font-medium tracking-tight mb-4 text-left">Our Elite Network</h2>
+              <p className="text-gray-500 text-lg max-w-2xl text-left">Collaborate with the top 1% of independent specialists across design, engineering, and artificial intelligence.</p>
             </div>
-            <Link to="/freelancers" className="da-btn-outline mt-6 md:mt-0">VIEW DIRECTORY</Link>
+            <Link to="/freelancers" className="da-btn-outline mt-6 md:mt-0 shadow-sm">VIEW DIRECTORY</Link>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {/* Hardcoded minimalist freelancer cards to match the aesthetic */}
-            {[
-              { name: 'ARJUN MEHTA', role: 'FULL-STACK ENGINEER', rating: '4.9', count: 47 },
-              { name: 'PRIYA SHARMA', role: 'UI/UX DESIGNER', rating: '4.8', count: 38 },
-              { name: 'RAHUL KUMAR', role: 'ML SPECIALIST', rating: '4.7', count: 29 },
-              { name: 'SARAH CHEN', role: 'CLOUD ARCHITECT', rating: '4.9', count: 52 },
-            ].map((f, i) => (
-              <div key={i} className="bg-white border border-gray-200 p-6 flex flex-col justify-between h-56 hover:border-daInfo-dark transition-colors">
+            {loading ? (
+              Array(4).fill(0).map((_, i) => (
+                <div key={i} className="h-56 bg-white border border-gray-100 animate-pulse shadow-sm" />
+              ))
+            ) : freelancers.map((f, i) => (
+              <div key={f._id} className="bg-white border-2 border-black p-6 flex flex-col justify-between h-56 hover:-translate-y-1 hover:translate-x-1 transition-transform da-shadow-black">
                 <div>
-                  <h3 className="font-bold text-daInfo-dark tracking-tight">{f.name}</h3>
-                  <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-1">{f.role}</p>
+                  <h3 className="font-bold text-black tracking-tight uppercase">{f.name}</h3>
+                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">
+                    {f.skills[0]} Specialist
+                  </p>
                 </div>
                 <div>
                   <div className="h-[1px] w-full bg-gray-100 my-4" />
                   <div className="flex justify-between items-center">
-                    <span className="text-sm font-bold text-daInfo-dark">★ {f.rating}</span>
-                    <span className="text-xs text-gray-500 font-medium">{f.count} REVIEWS</span>
+                    <span className="text-sm font-bold text-black uppercase tracking-widest bg-yellow-50 px-2 py-0.5 border border-yellow-200">★ {f.rating}</span>
+                    <span className="text-[10px] text-gray-400 font-black uppercase tracking-widest">{f.reviewCount} REVIEWS</span>
                   </div>
                 </div>
               </div>
@@ -318,20 +346,21 @@ export default function Home() {
       </section>
 
       {/* ══════════ CUSTOMER TESTIMONIALS ══════════ */}
-      <section className="bg-white py-24">
-        <div className="max-w-7xl mx-auto px-6">
+      <section id="testimonials" className="bg-white py-24">
+        <div className="max-w-7xl mx-auto px-6 text-left">
           <h2 className="text-4xl font-medium tracking-tight mb-16 text-center">What people are saying</h2>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
-            {[
-              { text: "MicroGig completely changed how we handle short-term engineering sprints. We found a React expert in 10 minutes.", author: "Tech Startup CEO" },
-              { text: "The flat pay structure and clear expectations make this the best place to pick up side projects.", author: "Senior Developer" },
-              { text: "No interviews, no hassle. Just pure execution. The quality of talent here is unmatched.", author: "Product Manager" },
-            ].map((t, i) => (
-              <div key={i} className="flex flex-col justify-between">
-                <p className="text-xl text-gray-800 leading-relaxed font-medium tracking-tight">"{t.text}"</p>
-                <div className="mt-8 border-l-2 border-daInfo-dark pl-4 flex flex-col justify-end">
-                  <span className="text-sm font-bold text-gray-500 uppercase tracking-widest">{t.author}</span>
+            {loading ? (
+              Array(3).fill(0).map((_, i) => (
+                <div key={i} className="h-40 bg-gray-50/50 animate-pulse border border-gray-100" />
+              ))
+            ) : testimonials.map((t, i) => (
+              <div key={t._id} className="flex flex-col justify-between">
+                <p className="text-xl text-gray-800 leading-relaxed font-medium tracking-tight">"{t.comment}"</p>
+                <div className="mt-8 border-l-[3px] border-black pl-4 flex flex-col justify-end">
+                  <span className="text-sm font-bold text-black uppercase tracking-[0.2em]">{t.reviewer?.name}</span>
+                  <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-1">CLIENT</span>
                 </div>
               </div>
             ))}

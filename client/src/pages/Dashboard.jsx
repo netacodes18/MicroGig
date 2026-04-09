@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { DollarSign, Star, Briefcase, Calendar, Clock, CheckCircle, Activity, Award, User, ChevronDown, ChevronUp } from 'lucide-react';
+import { DollarSign, Star, Briefcase, Calendar, Clock, CheckCircle, Activity, Award, User, ChevronDown, ChevronUp, Settings as SettingsIcon } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 export default function Dashboard() {
@@ -8,6 +8,9 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [submissionModal, setSubmissionModal] = useState({ shown: false, jobId: null, content: '' });
+  const [reviewModal, setReviewModal] = useState({ shown: false, jobId: null, freelancerId: null, rating: 5, comment: '' });
+  const [actionLoading, setActionLoading] = useState(false);
 
   useEffect(() => {
     if (!user) return; // wait for user
@@ -30,6 +33,60 @@ export default function Dashboard() {
     };
     fetchDashboard();
   }, [user]);
+
+  const handleSubmitWork = async () => {
+    setActionLoading(true);
+    try {
+      const token = localStorage.getItem('microgig_token');
+      const res = await fetch(`/api/jobs/${submissionModal.jobId}/submit`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ content: submissionModal.content })
+      });
+      if (res.ok) {
+        setSubmissionModal({ shown: false, jobId: null, content: '' });
+        window.location.reload();
+      }
+    } catch (err) { console.error(err); }
+    finally { setActionLoading(false); }
+  };
+
+  const handleApprove = async (jobId, freelancerId) => {
+    setActionLoading(true);
+    try {
+      const token = localStorage.getItem('microgig_token');
+      const res = await fetch(`/api/jobs/${jobId}/approve`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        setReviewModal({ shown: true, jobId, freelancerId, rating: 5, comment: '' });
+      }
+    } catch (err) { console.error(err); }
+    finally { setActionLoading(false); }
+  };
+
+  const handlePostReview = async () => {
+    setActionLoading(true);
+    try {
+      const token = localStorage.getItem('microgig_token');
+      const res = await fetch('/api/reviews', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ 
+          job: reviewModal.jobId, 
+          reviewee: reviewModal.freelancerId, 
+          rating: reviewModal.rating, 
+          comment: reviewModal.comment 
+        })
+      });
+      if (res.ok) {
+        setReviewModal({ shown: false, jobId: null, freelancerId: null, rating: 5, comment: '' });
+        window.location.reload();
+      }
+    } catch (err) { console.error(err); }
+    finally { setActionLoading(false); }
+  };
 
   if (!user && !localStorage.getItem('microgig_token')) {
     return (
@@ -61,6 +118,15 @@ export default function Dashboard() {
     return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   };
 
+  const dashboardProps = {
+    data, 
+    formatDate,
+    actionLoading,
+    setSubmissionModal,
+    handleApprove,
+    setReviewModal
+  };
+
   return (
     <div className="min-h-screen bg-white text-left">
       <div className="da-grid-bg pt-32 pb-20 border-b border-gray-200">
@@ -80,26 +146,130 @@ export default function Dashboard() {
                </div>
             </div>
             
-            {isClient ? (
-               <Link to="/jobs/new" className="da-btn-outline bg-daInfo-dark text-white">POST A GIG</Link>
-            ) : (
-               <Link to="/jobs" className="da-btn-outline">BROWSE DOMAINS</Link>
-            )}
+            <div className="flex items-center gap-4">
+              <Link to="/settings" className="da-btn-outline flex items-center gap-2">
+                <SettingsIcon className="w-4 h-4" /> SETTINGS
+              </Link>
+              {isClient ? (
+                 <Link to="/jobs/new" className="da-btn-outline bg-daInfo-dark text-white">POST A GIG</Link>
+              ) : (
+                 <Link to="/jobs" className="da-btn-outline">BROWSE DOMAINS</Link>
+              )}
+            </div>
           </div>
         </div>
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        {isClient ? <ClientDashboardContent data={data} formatDate={formatDate} /> : <FreelancerDashboardContent data={data} formatDate={formatDate} />}
+        {isClient ? <ClientDashboardContent {...dashboardProps} /> : <FreelancerDashboardContent {...dashboardProps} />}
       </div>
+
+      {/* SHARED SUBMIT MODAL */}
+      {submissionModal.shown && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-gray-900/60 backdrop-blur-md" onClick={() => setSubmissionModal({ shown: false, jobId: null, content: '' })} />
+          <div className="relative bg-white w-full max-w-lg border-2 border-black da-shadow-black p-8 animate-scale-in">
+             <h3 className="text-2xl font-black text-daInfo-dark uppercase tracking-tight mb-2">Final Submission</h3>
+             <p className="text-gray-500 text-sm mb-6 font-bold">Paste your links or final summary below for client review.</p>
+             <textarea 
+               rows="5" 
+               value={submissionModal.content}
+               onChange={(e) => setSubmissionModal(prev => ({ ...prev, content: e.target.value }))}
+               placeholder="e.g. Here is the link to the GitHub Repo: https://github.com..."
+               className="w-full p-4 border-2 border-gray-200 focus:border-daInfo-dark outline-none text-daInfo-dark font-medium mb-6 resize-none"
+             />
+             <div className="flex gap-4">
+               <button 
+                 onClick={() => handleSubmitWork()}
+                 disabled={actionLoading}
+                 className="flex-1 py-4 bg-daInfo-dark text-white font-black uppercase tracking-widest hover:bg-black transition-colors"
+               >
+                 {actionLoading ? 'SUBMITTING...' : 'DEPLOY SUBMISSION'}
+               </button>
+               <button onClick={() => setSubmissionModal({ shown: false, jobId: null, content: '' })} className="px-6 py-4 border-2 border-gray-200 font-bold uppercase tracking-widest">CANCEL</button>
+             </div>
+          </div>
+        </div>
+      )}
+
+      {/* SHARED REVIEW MODAL */}
+      {reviewModal.shown && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-gray-900/60 backdrop-blur-md" />
+          <div className="relative bg-white w-full max-w-lg border-2 border-black da-shadow-lg-pink p-8 animate-bounce-slow">
+             <div className="flex justify-center mb-6">
+                <div className="w-16 h-16 bg-daInfo-pink rounded-full flex items-center justify-center text-white border-2 border-black animate-spin-slow">
+                  <Star className="w-8 h-8 fill-white" />
+                </div>
+             </div>
+             <h3 className="text-2xl font-black text-center text-daInfo-dark uppercase tracking-tight mb-2">Service Excellence</h3>
+             <p className="text-gray-500 text-sm text-center mb-8 font-bold">Rate your experience with this talent.</p>
+             
+             <div className="flex justify-center gap-2 mb-8">
+               {[1,2,3,4,5].map(s => (
+                 <button key={s} onClick={() => setReviewModal(prev => ({ ...prev, rating: s }))} className="transition-transform hover:scale-125 focus:scale-125 outline-none">
+                    <Star className={`w-8 h-8 ${s <= reviewModal.rating ? 'fill-daInfo-pink text-daInfo-pink' : 'text-gray-200'}`} />
+                 </button>
+               ))}
+             </div>
+
+             <textarea 
+               rows="3" 
+               value={reviewModal.comment}
+               onChange={(e) => setReviewModal(prev => ({ ...prev, comment: e.target.value }))}
+               placeholder="Write a public review..."
+               className="w-full p-4 border-2 border-gray-200 focus:border-daInfo-pink outline-none text-daInfo-dark font-medium mb-6 resize-none"
+             />
+
+             <button 
+               onClick={() => handlePostReview()}
+               disabled={actionLoading}
+               className="w-full py-4 bg-daInfo-pink text-white font-black uppercase tracking-widest hover:bg-pink-600 transition-colors da-shadow-pink"
+             >
+               {actionLoading ? 'PUBLISHING...' : 'POST OFFICIAL REVIEW'}
+             </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
 // ----- CLIENT DASHBOARD -----
-function ClientDashboardContent({ data, formatDate }) {
+function ClientDashboardContent({ data, formatDate, actionLoading, handleApprove }) {
   const { postedJobs, clientStats } = data;
   const [expandedJobId, setExpandedJobId] = useState(null);
+  const [hiringId, setHiringId] = useState(null);
+
+  const handleHire = async (jobId, freelancerId) => {
+    if (!window.confirm('Are you sure you want to hire this freelancer? This will start the gig.')) return;
+    
+    setHiringId(freelancerId);
+    try {
+      const token = localStorage.getItem('microgig_token');
+      const res = await fetch(`/api/jobs/${jobId}/hire`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ freelancerId })
+      });
+      
+      if (res.ok) {
+        alert('Freelancer hired successfully!');
+        window.location.reload(); // Simple way to refresh for now
+      } else {
+        const errData = await res.json();
+        alert(`Error: ${errData.message}`);
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Network error');
+    } finally {
+      setHiringId(null);
+    }
+  };
 
   return (
     <>
@@ -159,8 +329,28 @@ function ClientDashboardContent({ data, formatDate }) {
               </div>
               
               {expandedJobId === job._id && (
-                <div className="bg-gray-50 border-t border-gray-200 p-5 md:p-8 animate-scale-in">
-                  <h5 className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-4 border-b border-gray-200 pb-2">Talent Applications</h5>
+                 <div className="bg-gray-50 border-t border-gray-200 p-5 md:p-8 animate-scale-in">
+                   
+                   {/* SHOW SUBMISSION IF IN REVIEW */}
+                   {job.status === 'needs-review' && (
+                     <div className="mb-8 p-6 bg-white border-4 border-daInfo-dark da-shadow-black">
+                        <h5 className="text-xs font-black uppercase tracking-widest text-daInfo-dark mb-4 flex items-center gap-2">
+                          <CheckCircle className="w-4 h-4" /> WORK SUBMISSION
+                        </h5>
+                        <div className="p-4 bg-gray-50 border border-gray-200 text-sm italic text-gray-700 mb-6 whitespace-pre-wrap">
+                           {job.submission?.content}
+                        </div>
+                        <button 
+                          onClick={() => handleApprove(job._id, job.applicants?.[0]?.id)}
+                          disabled={actionLoading}
+                          className="w-full py-4 bg-daInfo-blue text-white font-black uppercase tracking-widest hover:bg-daInfo-dark transition-all da-shadow-black active:translate-x-1 active:translate-y-1 active:shadow-none"
+                        >
+                          {actionLoading ? 'APPROVING...' : 'APPROVE & RELEASE FUNDS'}
+                        </button>
+                     </div>
+                   )}
+
+                   <h5 className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-4 border-b border-gray-200 pb-2">Talent Applications</h5>
                   
                   {job.applicants?.length > 0 ? (
                     <div className="grid lg:grid-cols-2 gap-4">
@@ -173,9 +363,23 @@ function ClientDashboardContent({ data, formatDate }) {
                                <span className="text-[10px] font-bold uppercase bg-yellow-50 text-yellow-700 px-1.5 py-0.5 border border-yellow-200 shrink-0">★ {app.rating || 'N/A'}</span>
                              </div>
                              <p className="text-xs text-gray-500 mt-1 mb-3 line-clamp-2 italic">"{app.message || "No cover letter provided."}"</p>
-                             <div className="flex flex-wrap gap-1 mt-auto">
-                               {app.skills?.slice(0, 3).map(s => <span key={s} className="px-1.5 py-0.5 bg-gray-100 text-gray-500 text-[9px] uppercase font-bold tracking-widest">{s}</span>)}
-                             </div>
+                              <div className="flex flex-wrap items-center justify-between gap-2 mt-auto">
+                                <div className="flex flex-wrap gap-1">
+                                  {app.skills?.slice(0, 3).map(s => <span key={s} className="px-1.5 py-0.5 bg-gray-100 text-gray-500 text-[9px] uppercase font-bold tracking-widest">{s}</span>)}
+                                </div>
+                                {job.status === 'open' && (
+                                  <button 
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleHire(job._id, app.id);
+                                    }}
+                                    disabled={hiringId === app.id}
+                                    className="px-3 py-1 bg-daInfo-dark text-white text-[10px] font-black uppercase tracking-widest hover:bg-black transition-colors disabled:opacity-50"
+                                  >
+                                    {hiringId === app.id ? 'HIRING...' : 'HIRE'}
+                                  </button>
+                                )}
+                              </div>
                            </div>
                         </div>
                       ))}
@@ -196,7 +400,7 @@ function ClientDashboardContent({ data, formatDate }) {
 }
 
 // ----- FREELANCER DASHBOARD -----
-function FreelancerDashboardContent({ data, formatDate }) {
+function FreelancerDashboardContent({ data, formatDate, setSubmissionModal }) {
   const { recruitmentHistory, earnings, rating, completedGigs } = data;
 
   return (
@@ -232,7 +436,6 @@ function FreelancerDashboardContent({ data, formatDate }) {
           </div>
         </div>
       </div>
-
       <h2 className="text-lg font-bold text-daInfo-dark tracking-tight mb-4">RECRUITMENT HISTORY</h2>
       
       {recruitmentHistory?.length === 0 ? (
@@ -265,14 +468,22 @@ function FreelancerDashboardContent({ data, formatDate }) {
                     {historyItem.poster}
                  </div>
                  
-                 <div className="mb-2 md:mb-0">
+                 <div>
                     <span className="md:hidden text-xs font-bold uppercase text-gray-400 mr-2">Status:</span>
-                    <span className={`text-[10px] font-bold uppercase tracking-widest px-2 py-1 border ${historyItem.status === 'open' ? 'border-blue-200 text-blue-700 bg-blue-50' : historyItem.status === 'in-progress' ? 'border-yellow-200 text-yellow-700 bg-yellow-50' : historyItem.status === 'completed' ? 'border-green-200 text-green-700 bg-green-50' : 'border-gray-200 text-gray-600 bg-gray-50'}`}>
-                       {historyItem.status}
+                    <span className={`text-[10px] font-bold uppercase tracking-widest px-2 py-1 border ${historyItem.status === 'open' ? 'border-blue-200 text-blue-700 bg-blue-50' : historyItem.status === 'in-progress' ? 'border-yellow-200 text-yellow-700 bg-yellow-50' : historyItem.status === 'needs-review' ? 'border-daInfo-pink text-daInfo-pink bg-pink-50' : historyItem.status === 'completed' ? 'border-green-200 text-green-700 bg-green-50' : 'border-gray-200 text-gray-600 bg-gray-50'}`}>
+                       {historyItem.status || 'Applied'}
                     </span>
                  </div>
                  
                  <div className="text-right text-sm font-medium text-gray-500 flex items-center md:justify-end gap-1">
+                    {historyItem.status === 'in-progress' && (
+                       <button 
+                         onClick={() => setSubmissionModal({ shown: true, jobId: historyItem._id, content: '' })}
+                         className="mr-4 text-[10px] font-black text-daInfo-blue border-b-2 border-daInfo-blue hover:text-daInfo-dark hover:border-daInfo-dark transition-all"
+                       >
+                         SUBMIT GIG
+                       </button>
+                    )}
                     <span className="md:hidden text-xs font-bold uppercase text-gray-400 mr-2">Date:</span>
                     <Clock className="w-3 h-3" /> {formatDate(historyItem.date)}
                  </div>

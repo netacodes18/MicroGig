@@ -102,4 +102,16 @@
 
 @layer utilities {
   .text-balance { text-wrap: balance; }
+  
+  .da-shadow-black {
+    box-shadow: 8px 8px 0px 0px #000000;
+  }
+  
+  .da-shadow-pink {
+    box-shadow: 8px 8px 0px 0px #ec4899;
+  }
+
+  .da-shadow-lg-black {
+    box-shadow: 12px 12px 0px 0px #000000;
+  }
 }

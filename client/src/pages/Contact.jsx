@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Mail, MessageSquare, MapPin, Phone, Send, ArrowRight, CheckCircle } from 'lucide-react';
+import { Mail, MessageSquare, MapPin, Phone, Send, CheckCircle } from 'lucide-react';
 
 export default function Contact() {
   const [form, setForm] = useState({ name: '', email: '', subject: '', message: '' });
@@ -14,102 +14,175 @@ export default function Contact() {
   };
 
   const contactInfo = [
-    { icon: Mail, label: 'Email', value: 'hello@microgig.com', color: '#6366f1' },
-    { icon: Phone, label: 'Phone', value: '+91 98765 43210', color: '#8b5cf6' },
-    { icon: MapPin, label: 'Location', value: 'Bangalore, India', color: '#06b6d4' },
-    { icon: MessageSquare, label: 'Support', value: 'Mon-Fri, 9am-6pm IST', color: '#10b981' },
+    { icon: Mail, label: 'EMAIL', value: 'HELLO@MICROGIG.COM', color: '#2563eb' },
+    { icon: Phone, label: 'PHONE', value: '+91 98765 43210', color: '#ec4899' },
+    { icon: MapPin, label: 'LOCATION', value: 'BANGALORE, INDIA', color: '#22c55e' },
+    { icon: MessageSquare, label: 'SUPPORT', value: 'MON-FRI, 9AM-6PM IST', color: '#000000' },
   ];
 
   return (
-    <div className="min-h-screen relative">
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="blob blob-1" style={{ top: '5%', right: '-10%' }} />
-        <div className="blob blob-3" style={{ bottom: '10%', left: '-5%' }} />
-        <div className="grid-pattern" />
-      </div>
+    <div className="min-h-screen da-grid-bg pt-12 pb-24 px-4 overflow-hidden">
+      <div className="max-w-7xl mx-auto">
+        
+        {/* Header Section */}
+        <header className="mb-20 pt-10">
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }} 
+            animate={{ opacity: 1, y: 0 }}
+            className="flex flex-col items-center"
+          >
+            <div className="mb-6 flex items-center gap-2 text-xs font-bold tracking-[0.2em] text-gray-400 uppercase">
+              <span className="w-8 h-[2px] bg-gray-200"></span>
+              CONTACT US
+              <span className="w-8 h-[2px] bg-gray-200"></span>
+            </div>
+            <h1 className="da-heading text-black mb-8">
+              GET IN<br/>
+              <span className="da-blue-text italic">TOUCH</span>
+            </h1>
+            <p className="text-xl text-gray-600 max-w-2xl text-center font-medium leading-relaxed">
+              Have a question, partnership idea, or just want to say hi? <br className="hidden md:block"/>
+              We usually respond within 24 hours.
+            </p>
+          </motion.div>
+        </header>
 
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16 relative z-10">
-        {/* Header */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-16">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass mb-6">
-            <Mail className="w-4 h-4 text-accent" />
-            <span className="text-sm text-dark-300">Get in Touch</span>
-          </div>
-          <h1 className="text-4xl md:text-6xl font-bold mb-4">
-            Let's <span className="gradient-text">talk</span>
-          </h1>
-          <p className="text-lg text-dark-400 max-w-xl mx-auto">Have a question, partnership idea, or just want to say hi? We'd love to hear from you.</p>
-        </motion.div>
-
-        <div className="grid lg:grid-cols-5 gap-10">
-          {/* Contact Info */}
-          <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 }} className="lg:col-span-2 space-y-4">
+        <div className="grid lg:grid-cols-12 gap-12">
+          
+          {/* Left Column: Contact Info Cards */}
+          <motion.div 
+            initial={{ opacity: 0, x: -30 }} 
+            animate={{ opacity: 1, x: 0 }} 
+            transition={{ delay: 0.2 }}
+            className="lg:col-span-4 space-y-6"
+          >
             {contactInfo.map(({ icon: Icon, label, value, color }) => (
-              <div key={label} className="glass-card p-5 flex items-center gap-4 group">
-                <div className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform" style={{ background: `${color}12` }}>
-                  <Icon className="w-5 h-5" style={{ color }} />
+              <div 
+                key={label} 
+                className="bg-white border-2 border-black p-8 relative group hover:-translate-y-1 hover:translate-x-1 transition-transform da-shadow-black"
+              >
+                {/* Accent corner */}
+                <div 
+                  className="absolute top-0 right-0 w-4 h-4 border-l-2 border-b-2 border-black" 
+                  style={{ backgroundColor: color }}
+                />
+                
+                <div className="flex items-center gap-4 mb-4">
+                  <div className="p-2 border-2 border-black bg-white">
+                    <Icon className="w-5 h-5 text-black" />
+                  </div>
+                  <h3 className="text-xs font-black tracking-[0.2em] text-gray-400">{label}</h3>
                 </div>
-                <div>
-                  <p className="text-xs text-dark-500 uppercase tracking-wider font-medium">{label}</p>
-                  <p className="text-sm text-white font-medium mt-0.5">{value}</p>
-                </div>
+                <p className="text-lg font-bold text-black tracking-tight">{value}</p>
               </div>
             ))}
 
-            {/* Map placeholder */}
-            <div className="glass-card p-1 overflow-hidden mt-6">
-              <div className="w-full h-48 rounded-[16px] bg-gradient-to-br from-dark-800 to-dark-900 flex items-center justify-center relative overflow-hidden">
-                <div className="absolute inset-0 opacity-20">
-                  <div className="grid-pattern" />
-                </div>
-                <div className="text-center relative z-10">
-                  <MapPin className="w-8 h-8 text-accent mx-auto mb-2" style={{ animation: 'float-gentle 3s ease-in-out infinite' }} />
-                  <p className="text-sm text-dark-400">Bangalore, India</p>
-                  <p className="text-xs text-dark-500">HSR Layout, 560102</p>
-                </div>
+            {/* Map Placeholder Card */}
+            <div 
+              className="bg-black text-white border-2 border-black p-8 mt-12 relative overflow-hidden da-shadow-pink"
+            >
+              <div className="relative z-10">
+                <h3 className="text-xs font-black tracking-[0.2em] text-gray-500 mb-4">HEADQUARTERS</h3>
+                <p className="text-xl font-bold mb-1">BANGALORE, INDIA</p>
+                <p className="text-gray-400 text-sm font-medium">HSR Layout, Sector 2, 560102</p>
               </div>
+              {/* Abstract brutalist shape */}
+              <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-white/10 rotate-12 border-2 border-white/20" />
             </div>
           </motion.div>
 
-          {/* Form */}
-          <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.3 }} className="lg:col-span-3">
-            <div className="glass-card p-8">
+          {/* Right Column: Form */}
+          <motion.div 
+            initial={{ opacity: 0, x: 30 }} 
+            animate={{ opacity: 1, x: 0 }} 
+            transition={{ delay: 0.3 }}
+            className="lg:col-span-8"
+          >
+            <div 
+              className="bg-white border-2 border-black p-10 md:p-12 da-shadow-lg-black"
+            >
               {submitted ? (
-                <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="text-center py-12">
-                  <div className="w-16 h-16 rounded-full bg-green-500/10 flex items-center justify-center mx-auto mb-4" style={{ animation: 'glow-pulse 2s ease infinite' }}>
-                    <CheckCircle className="w-8 h-8 text-green-400" />
+                <motion.div 
+                  initial={{ opacity: 0, scale: 0.95 }} 
+                  animate={{ opacity: 1, scale: 1 }} 
+                  className="text-center py-20 flex flex-col items-center"
+                >
+                  <div className="w-24 h-24 border-4 border-black flex items-center justify-center mb-8 bg-[#22c55e]">
+                    <CheckCircle className="w-12 h-12 text-white" />
                   </div>
-                  <h3 className="text-xl font-bold text-white mb-2">Message sent!</h3>
-                  <p className="text-dark-400">We'll get back to you within 24 hours.</p>
+                  <h2 className="text-4xl font-black mb-4 uppercase tracking-tighter">Message Sent</h2>
+                  <p className="text-gray-600 font-bold text-lg">WE'LL GET BACK TO YOU SOON.</p>
+                  <button 
+                    onClick={() => setSubmitted(false)}
+                    className="mt-12 da-btn-outline"
+                  >
+                    SEND ANOTHER ONE
+                  </button>
                 </motion.div>
               ) : (
-                <form onSubmit={handleSubmit} className="space-y-5">
-                  <div className="grid sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-sm font-medium text-dark-300 mb-2 block">Name</label>
-                      <input type="text" placeholder="John Doe" value={form.name} onChange={e => setForm({...form, name: e.target.value})} className="input-field" required />
+                <form onSubmit={handleSubmit} className="space-y-8">
+                  <div className="grid md:grid-cols-2 gap-8">
+                    <div className="space-y-3">
+                      <label className="text-xs font-black tracking-widest text-black uppercase">FULL NAME</label>
+                      <input 
+                        type="text" 
+                        placeholder="e.g., John Doe" 
+                        value={form.name} 
+                        onChange={e => setForm({...form, name: e.target.value})} 
+                        className="w-full bg-white border-2 border-black p-4 text-black font-bold placeholder:text-gray-300 focus:bg-gray-50 transition-colors focus:outline-none" 
+                        required 
+                      />
                     </div>
-                    <div>
-                      <label className="text-sm font-medium text-dark-300 mb-2 block">Email</label>
-                      <input type="email" placeholder="john@example.com" value={form.email} onChange={e => setForm({...form, email: e.target.value})} className="input-field" required />
+                    <div className="space-y-3">
+                      <label className="text-xs font-black tracking-widest text-black uppercase">EMAIL ADDRESS</label>
+                      <input 
+                        type="email" 
+                        placeholder="john@example.com" 
+                        value={form.email} 
+                        onChange={e => setForm({...form, email: e.target.value})} 
+                        className="w-full bg-white border-2 border-black p-4 text-black font-bold placeholder:text-gray-300 focus:bg-gray-50 transition-colors focus:outline-none" 
+                        required 
+                      />
                     </div>
                   </div>
-                  <div>
-                    <label className="text-sm font-medium text-dark-300 mb-2 block">Subject</label>
-                    <input type="text" placeholder="How can we help?" value={form.subject} onChange={e => setForm({...form, subject: e.target.value})} className="input-field" required />
+                  
+                  <div className="space-y-3">
+                    <label className="text-xs font-black tracking-widest text-black uppercase">SUBJECT</label>
+                    <input 
+                      type="text" 
+                      placeholder="What is this regarding?" 
+                      value={form.subject} 
+                      onChange={e => setForm({...form, subject: e.target.value})} 
+                      className="w-full bg-white border-2 border-black p-4 text-black font-bold placeholder:text-gray-300 focus:bg-gray-50 transition-colors focus:outline-none" 
+                      required 
+                    />
                   </div>
-                  <div>
-                    <label className="text-sm font-medium text-dark-300 mb-2 block">Message</label>
-                    <textarea rows={5} placeholder="Tell us more..." value={form.message} onChange={e => setForm({...form, message: e.target.value})} className="input-field resize-none" required />
+
+                  <div className="space-y-3">
+                    <label className="text-xs font-black tracking-widest text-black uppercase">MESSAGE</label>
+                    <textarea 
+                      rows={6} 
+                      placeholder="Tell us everything..." 
+                      value={form.message} 
+                      onChange={e => setForm({...form, message: e.target.value})} 
+                      className="w-full bg-white border-2 border-black p-4 text-black font-bold placeholder:text-gray-300 focus:bg-gray-50 transition-colors focus:outline-none resize-none" 
+                      required 
+                    />
                   </div>
-                  <button type="submit" className="btn-primary w-full py-3.5 magnetic-hover group">
-                    Send Message
-                    <Send className="w-4 h-4 ml-2 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
-                  </button>
+
+                  <div className="pt-6">
+                    <button 
+                      type="submit" 
+                      className="da-btn-primary w-full md:w-auto md:px-12 py-5 text-sm"
+                    >
+                      SEND MESSAGE
+                    </button>
+                  </div>
                 </form>
               )}
             </div>
           </motion.div>
+
         </div>
       </div>
     </div>

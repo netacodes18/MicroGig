@@ -4,14 +4,19 @@ const User = require('../models/User');
 // GET /api/reviews?user=<id>
 exports.getReviews = async (req, res, next) => {
   try {
-    const { user } = req.query;
+    const { user, limit, minRating } = req.query;
     let query = {};
     if (user) query.reviewee = user;
+    if (minRating) query.rating = { $gte: parseInt(minRating) };
 
-    const reviews = await Review.find(query)
+    let reviewsQuery = Review.find(query)
       .populate('reviewer', 'name avatar')
       .populate('reviewee', 'name avatar')
       .sort({ createdAt: -1 });
+
+    if (limit) reviewsQuery = reviewsQuery.limit(parseInt(limit));
+
+    const reviews = await reviewsQuery;
     res.json(reviews);
   } catch (err) { next(err); }
 };

@@ -51,8 +51,12 @@ const jobSchema = new mongoose.Schema({
   }],
   status: {
     type: String,
-    enum: ['open', 'in-progress', 'completed', 'cancelled'],
+    enum: ['open', 'in-progress', 'needs-review', 'completed', 'cancelled'],
     default: 'open',
+  },
+  submission: {
+    content: { type: String, default: '' },
+    submittedAt: { type: Date },
   },
   isUrgent: {
     type: Boolean,

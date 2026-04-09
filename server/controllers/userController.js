@@ -4,17 +4,21 @@ const Job = require('../models/Job');
 // GET /api/users — list freelancers
 exports.getUsers = async (req, res, next) => {
   try {
-    const { skill, sort, search } = req.query;
-    let query = {};
+    const { skill, sort, search, limit, featured, verified } = req.query;
+    let query = { role: 'freelancer' };
 
     if (skill) query.skills = { $in: skill.split(',') };
     if (search) query.name = { $regex: search, $options: 'i' };
+    if (featured === 'true') query.rating = { $gte: 4.5 };
+    if (verified === 'true') query.rating = { $gte: 4.2 };
 
     let users = User.find(query).select('-password');
 
     if (sort === 'rating') users = users.sort({ rating: -1 });
     else if (sort === 'gigs') users = users.sort({ completedGigs: -1 });
     else users = users.sort({ createdAt: -1 });
+
+    if (limit) users = users.limit(parseInt(limit));
 
     const result = await users;
     res.json(result);

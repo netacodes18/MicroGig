@@ -1,9 +1,10 @@
 const Job = require('../models/Job');
+const Notification = require('../models/Notification');
 
 // GET /api/jobs
 exports.getJobs = async (req, res, next) => {
   try {
-    const { category, skill, status, search, sort } = req.query;
+    const { category, skill, status, search, sort, minBudget, maxBudget, duration } = req.query;
     let query = {};
 
     if (category) query.category = category;
@@ -11,6 +12,11 @@ exports.getJobs = async (req, res, next) => {
     if (status) query.status = status;
     else query.status = 'open';
     if (search) query.title = { $regex: search, $options: 'i' };
+    
+    // Advanced Filters
+    if (minBudget) query['budget.max'] = { ...query['budget.max'], $gte: Number(minBudget) };
+    if (maxBudget) query['budget.max'] = { ...query['budget.max'], $lte: Number(maxBudget) };
+    if (duration) query.duration = { $regex: duration, $options: 'i' };
 
     let jobs = Job.find(query).populate('poster', 'name avatar rating');
 
@@ -67,6 +73,16 @@ exports.applyToJob = async (req, res, next) => {
 
     job.applicants.push({ user: req.user._id, message: req.body.message || '' });
     await job.save();
+
+    // Trigger Notification for Client
+    await Notification.create({
+      recipient: job.poster,
+      sender: req.user._id,
+      type: 'apply',
+      job: job._id,
+      message: `${req.user.name} applied for your gig: ${job.title}`
+    });
+
     res.json({ message: 'Applied successfully' });
   } catch (err) { next(err); }
 };
@@ -80,5 +96,109 @@ exports.deleteJob = async (req, res, next) => {
       return res.status(403).json({ message: 'Not authorized' });
     await job.deleteOne();
     res.json({ message: 'Job deleted' });
+  } catch (err) { next(err); }
+};
+// POST /api/jobs/:id/hire
+exports.hireFreelancer = async (req, res, next) => {
+  try {
+    const { freelancerId } = req.body;
+    const job = await Job.findById(req.params.id);
+
+    if (!job) return res.status(404).json({ message: 'Job not found' });
+    
+    // Auth check: only the poster can hire
+    if (job.poster.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: 'Not authorized to hire for this job' });
+    }
+
+    if (job.status !== 'open') {
+      return res.status(400).json({ message: 'Job is not open for hiring' });
+    }
+
+    const application = job.applicants.find(a => a.user.toString() === freelancerId);
+    if (!application) {
+      return res.status(400).json({ message: 'Freelancer has not applied to this job' });
+    }
+
+    job.assignedTo = freelancerId;
+    job.status = 'in-progress';
+    await job.save();
+
+    // Trigger Notification for Freelancer
+    await Notification.create({
+      recipient: freelancerId,
+      sender: req.user._id,
+      type: 'hire',
+      job: job._id,
+      message: `Congratulations! You have been hired for: ${job.title}`
+    });
+
+    res.json({ message: 'Freelancer hired successfully', job });
+  } catch (err) { next(err); }
+};
+
+// POST /api/jobs/:id/submit
+exports.submitWork = async (req, res, next) => {
+  try {
+    const { content } = req.body;
+    const job = await Job.findById(req.params.id);
+
+    if (!job) return res.status(404).json({ message: 'Job not found' });
+    if (job.assignedTo.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: 'Not authorized to submit for this job' });
+    }
+
+    job.status = 'needs-review';
+    job.submission = { content, submittedAt: Date.now() };
+    await job.save();
+
+    // Notify Client
+    await Notification.create({
+      recipient: job.poster,
+      sender: req.user._id,
+      type: 'other',
+      job: job._id,
+      message: `${req.user.name} submitted work for: ${job.title}`
+    });
+
+    res.json({ message: 'Work submitted successfully', job });
+  } catch (err) { next(err); }
+};
+
+// POST /api/jobs/:id/approve
+exports.approveWork = async (req, res, next) => {
+  try {
+    const job = await Job.findById(req.params.id);
+
+    if (!job) return res.status(404).json({ message: 'Job not found' });
+    if (job.poster.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: 'Not authorized to approve for this job' });
+    }
+
+    if (job.status !== 'needs-review') {
+      return res.status(400).json({ message: 'Job is not in review status' });
+    }
+
+    job.status = 'completed';
+    await job.save();
+
+    // Update Freelancer Stats
+    const freelancer = await User.findById(job.assignedTo);
+    if (freelancer) {
+      freelancer.completedGigs += 1;
+      freelancer.totalEarnings += (job.budget.max || job.budget.min || 0);
+      await freelancer.save();
+    }
+
+    // Notify Freelancer
+    await Notification.create({
+      recipient: job.assignedTo,
+      sender: req.user._id,
+      type: 'other',
+      job: job._id,
+      message: `Your submission for "${job.title}" has been approved! Funds released.`
+    });
+
+    res.json({ message: 'Job approved and completed', job });
   } catch (err) { next(err); }
 };

@@ -1,7 +1,10 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Briefcase, AlertCircle, Clock, Zap } from 'lucide-react';
-import { categories } from '../data/mockData';
+const categories = [
+  'Web Development', 'Mobile Development', 'Design', 'Machine Learning', 
+  'Content Writing', 'DevOps', 'Backend Development', 'Data Science'
+];
 
 export default function PostJob() {
   const navigate = useNavigate();

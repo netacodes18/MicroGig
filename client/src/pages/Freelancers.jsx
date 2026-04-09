@@ -1,18 +1,36 @@
 import { useState, useEffect } from 'react';
-import { Search, Star, Filter, Github, Linkedin, Globe, X, MapPin, Briefcase } from 'lucide-react';
-import { mockUsers } from '../data/mockData';
-
+import { Search, Star, Filter, Github, Linkedin, Globe, X, MapPin, Briefcase, CheckCircle } from 'lucide-react';
 export default function Freelancers() {
+  const [freelancers, setFreelancers] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [selectedSkill, setSelectedSkill] = useState('');
   const [showFilters, setShowFilters] = useState(false);
+  const [verifiedOnly, setVerifiedOnly] = useState(false);
   const [selectedFreelancer, setSelectedFreelancer] = useState(null);
 
-  const filtered = mockUsers.filter(u => {
-    const matchSearch = !search || u.name.toLowerCase().includes(search.toLowerCase()) || u.skills.some(s => s.toLowerCase().includes(search.toLowerCase()));
-    const matchSkill = !selectedSkill || u.skills.includes(selectedSkill);
-    return matchSearch && matchSkill;
-  });
+  useEffect(() => {
+    const fetchFreelancers = async () => {
+      setLoading(true);
+      try {
+        const query = new URLSearchParams();
+        if (search) query.append('search', search);
+        if (selectedSkill) query.append('skill', selectedSkill);
+        if (verifiedOnly) query.append('verified', 'true');
+        
+        const res = await fetch(`/api/users?${query.toString()}`);
+        const data = await res.json();
+        setFreelancers(data);
+      } catch (err) {
+        console.error('Failed to fetch:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    const debounce = setTimeout(fetchFreelancers, 300);
+    return () => clearTimeout(debounce);
+  }, [search, selectedSkill, verifiedOnly]);
 
   const topSkills = ['React', 'Node.js', 'Python', 'Figma', 'UI/UX', 'Flutter', 'AWS', 'Docker', 'TypeScript', 'MongoDB'];
 
@@ -67,6 +85,22 @@ export default function Freelancers() {
                   ))}
                 </div>
               </div>
+
+              <div>
+                <label className="text-xs font-bold uppercase tracking-widest text-gray-500 block mb-3">Expertise Level</label>
+                <label className={`cursor-pointer flex items-center gap-3 p-4 border-2 transition-all ${verifiedOnly ? 'border-daInfo-blue bg-daInfo-blue/5' : 'border-gray-200 hover:border-gray-300'}`}>
+                   <input 
+                     type="checkbox" 
+                     checked={verifiedOnly} 
+                     onChange={(e) => setVerifiedOnly(e.target.checked)}
+                     className="sr-only"
+                   />
+                   <div className={`w-5 h-5 border-2 flex items-center justify-center transition-colors ${verifiedOnly ? 'bg-daInfo-blue border-daInfo-blue' : 'border-gray-300'}`}>
+                      {verifiedOnly && <div className="w-2 h-2 bg-white" />}
+                   </div>
+                   <span className="text-xs font-bold uppercase tracking-widest text-daInfo-dark">Verified Specialists Only (4.2+ ★)</span>
+                </label>
+              </div>
             </div>
           )}
         </div>
@@ -75,20 +109,31 @@ export default function Freelancers() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 text-left">
         <div className="flex justify-between items-center mb-8 border-b border-gray-200 pb-4">
            <p className="text-sm font-bold uppercase tracking-widest text-gray-500">
-             {filtered.length} FREELANCER{filtered.length !== 1 ? 'S' : ''} FOUND
+             {loading ? 'Searching...' : `${freelancers.length} FREELANCER${freelancers.length !== 1 ? 'S' : ''} FOUND`}
            </p>
         </div>
 
         {/* Freelancers Grid */}
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {filtered.map((user) => (
+          {loading ? (
+            Array(6).fill(0).map((_, i) => (
+              <div key={i} className="h-64 border border-gray-100 animate-pulse bg-gray-50" />
+            ))
+          ) : freelancers.map((user) => (
             <div 
               key={user._id} 
               onClick={() => setSelectedFreelancer(user)} 
-              className="border border-gray-200 hover:border-daInfo-dark transition-colors p-6 flex flex-col group cursor-pointer bg-white relative"
             >
+              {user.rating >= 4.2 && (
+                <div className="absolute -top-3 -right-3 z-10 bg-daInfo-dark text-white p-2 border-2 border-white da-shadow-black">
+                   <div className="flex items-center gap-1">
+                      <CheckCircle className="w-3 h-3" />
+                      <span className="text-[9px] font-black uppercase tracking-tighter">Verified</span>
+                   </div>
+                </div>
+              )}
               <div className="flex items-start justify-between mb-6">
-                <span className="text-[10px] font-bold uppercase tracking-widest text-gray-500 border border-gray-200 px-2 py-1">CERTIFIED EXPERT</span>
+                <span className="text-[10px] font-bold uppercase tracking-widest text-gray-500 border border-gray-200 px-2 py-1">{user.rating >= 4.2 ? 'VERIFIED EXPERT' : 'CERTIFIED EXPERT'}</span>
                 <div className="flex items-center gap-1 bg-yellow-50 text-yellow-700 px-2 py-1 border border-yellow-200">
                    <Star className="w-3 h-3 fill-yellow-500 text-yellow-500" />
                    <span className="text-[10px] font-bold uppercase tracking-widest">{user.rating} ({user.reviewCount})</span>
@@ -137,7 +182,7 @@ export default function Freelancers() {
           ))}
         </div>
 
-        {filtered.length === 0 && (
+        {!loading && freelancers.length === 0 && (
           <div className="text-center py-32 border-2 border-dashed border-gray-200 mt-8">
             <Search className="w-12 h-12 text-gray-300 mx-auto mb-4" />
             <h3 className="text-xl font-bold text-daInfo-dark mb-2">No freelancers found</h3>

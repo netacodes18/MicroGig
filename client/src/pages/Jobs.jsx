@@ -1,11 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, Filter, Clock, Zap, X, MapPin, Briefcase } from 'lucide-react';
-import { categories } from '../data/mockData';
 import { useAuth } from '../context/AuthContext';
 
 export default function Jobs() {
-  const { user } = useAuth();
+  const { user: authUser } = useAuth();
   const navigate = useNavigate();
   const [jobsData, setJobsData] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -14,35 +13,59 @@ export default function Jobs() {
   const [selectedCategory, setSelectedCategory] = useState('');
   const [showFilters, setShowFilters] = useState(false);
   const [sortBy, setSortBy] = useState('newest');
+  const [minBudget, setMinBudget] = useState('');
+  const [maxBudget, setMaxBudget] = useState('');
+  const [selectedDuration, setSelectedDuration] = useState('');
   const [selectedJob, setSelectedJob] = useState(null);
+  const [applyModal, setApplyModal] = useState({ shown: false, message: '' });
+  const [applyLoading, setApplyLoading] = useState(false);
+  const [applyStatus, setApplyStatus] = useState(null);
+
+
+
+  const categories = [
+    'Web Development', 'Mobile Development', 'Design', 'Machine Learning', 
+    'Content Writing', 'DevOps', 'Backend Development', 'Data Science'
+  ];
 
   useEffect(() => {
-    fetch('/api/jobs')
-      .then(res => res.json())
-      .then(data => {
-        setJobsData(data);
-        setLoading(false);
-      })
-      .catch(err => {
-        console.error(err);
-        setLoading(false);
-      });
-  }, []);
+    const fetchJobs = async () => {
+      setLoading(true);
+      try {
+        const query = new URLSearchParams();
+        if (search) query.append('search', search);
+        if (selectedCategory) query.append('category', selectedCategory);
+        if (sortBy === 'urgent') query.append('sort', 'urgent');
+        if (sortBy === 'budget') query.append('sort', 'budget');
+        if (minBudget) query.append('minBudget', minBudget);
+        if (maxBudget) query.append('maxBudget', maxBudget);
+        if (selectedDuration) query.append('duration', selectedDuration);
+        
+        const res = await fetch(`/api/jobs?${query.toString()}`);
+        const data = await res.json();
 
-  const filtered = jobsData.filter(job => {
-    if (user?.role === 'client') {
-      const posterId = typeof job.poster === 'object' ? job.poster._id : job.poster;
-      if (posterId !== user._id) return false;
-    }
+        // If client, filter to show only their own jobs (if needed, or handled by backend)
+        let filteredData = data;
+        if (authUser?.role === 'client') {
+          filteredData = data.filter(job => {
+             const posterId = typeof job.poster === 'object' ? job.poster._id : job.poster;
+             return posterId === authUser._id;
+          });
+        }
+        
+        setJobsData(filteredData);
+      } catch (err) {
+        console.error('Failed to fetch jobs:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-    const matchSearch = !search || job.title.toLowerCase().includes(search.toLowerCase()) || job.skills.some(s => s.toLowerCase().includes(search.toLowerCase()));
-    const matchCategory = !selectedCategory || job.category === selectedCategory;
-    return matchSearch && matchCategory;
-  }).sort((a, b) => {
-    if (sortBy === 'budget') return b.budget.max - a.budget.max;
-    if (sortBy === 'urgent') return (b.isUrgent ? 1 : 0) - (a.isUrgent ? 1 : 0);
-    return new Date(b.createdAt) - new Date(a.createdAt);
-  });
+    const timer = setTimeout(fetchJobs, 300);
+    return () => clearTimeout(timer);
+  }, [search, selectedCategory, sortBy, authUser, minBudget, maxBudget, selectedDuration]);
+
+  const filtered = jobsData; // Already filtered/sorted by backend/effect
 
   // Prevent body scrolling when modal is open
   useEffect(() => {
@@ -101,6 +124,42 @@ export default function Jobs() {
                   {[['newest', 'Newest'], ['budget', 'Highest Budget'], ['urgent', 'Urgent First']].map(([val, label]) => (
                     <button key={val} onClick={() => setSortBy(val)} className={`px-4 py-2 border text-xs font-bold uppercase tracking-widest ${sortBy === val ? 'bg-daInfo-dark text-white border-daInfo-dark' : 'bg-white text-gray-600 border-gray-200 hover:border-gray-400'}`}>{label}</button>
                   ))}
+                </div>
+              </div>
+
+              <div className="grid sm:grid-cols-2 gap-6">
+                <div>
+                  <label className="text-xs font-bold uppercase tracking-widest text-gray-500 block mb-3">Budget Range ($)</label>
+                  <div className="flex items-center gap-2">
+                    <input 
+                      type="number" 
+                      placeholder="Min" 
+                      value={minBudget} 
+                      onChange={(e) => setMinBudget(e.target.value)}
+                      className="w-full p-2 border-2 border-gray-200 focus:border-daInfo-dark outline-none text-xs font-bold"
+                    />
+                    <span className="text-gray-400">—</span>
+                    <input 
+                      type="number" 
+                      placeholder="Max" 
+                      value={maxBudget} 
+                      onChange={(e) => setMaxBudget(e.target.value)}
+                      className="w-full p-2 border-2 border-gray-200 focus:border-daInfo-dark outline-none text-xs font-bold"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="text-xs font-bold uppercase tracking-widest text-gray-500 block mb-3">Est. Duration</label>
+                  <select 
+                    value={selectedDuration} 
+                    onChange={(e) => setSelectedDuration(e.target.value)}
+                    className="w-full p-2 border-2 border-gray-200 focus:border-daInfo-dark outline-none text-xs font-bold uppercase tracking-widest h-[42px]"
+                  >
+                    <option value="">Any Duration</option>
+                    <option value="Day">Under 24 Hours</option>
+                    <option value="3 Days">1-3 Days</option>
+                    <option value="Week">1 Week+</option>
+                  </select>
                 </div>
               </div>
             </div>
@@ -259,7 +318,10 @@ export default function Jobs() {
                              <span className="w-2 h-2 bg-daInfo-blue absolute right-5 group-hover:bg-white transition-colors" />
                           </button>
                        ) : (
-                          <button className="w-full relative inline-flex items-center justify-center gap-3 px-6 py-5 text-sm font-bold text-white uppercase tracking-widest bg-daInfo-dark hover:bg-black transition-all group shadow-sm">
+                          <button 
+                            onClick={() => setApplyModal({ shown: true, message: '' })}
+                            className="w-full relative inline-flex items-center justify-center gap-3 px-6 py-5 text-sm font-bold text-white uppercase tracking-widest bg-daInfo-dark hover:bg-black transition-all group shadow-sm"
+                          >
                              APPLY TO GIG
                              <span className="w-2 h-2 bg-daInfo-blue absolute right-5 group-hover:bg-white transition-colors" />
                           </button>
@@ -269,6 +331,81 @@ export default function Jobs() {
                   </div>
                 </div>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* APPLY MODAL */}
+        {applyModal.shown && (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-gray-900/60 backdrop-blur-md" onClick={() => setApplyModal({ shown: false, message: '' })} />
+            <div className="relative bg-white w-full max-w-lg border-2 border-black da-shadow-lg-black p-8 animate-scale-in text-left">
+               <h3 className="text-2xl font-bold text-daInfo-dark uppercase tracking-tight mb-2">Apply for this Gig</h3>
+               <p className="text-gray-500 text-sm mb-6">Include a short note explaining why you're the best fit for this task.</p>
+               
+               <div className="space-y-4">
+                  <div>
+                    <label className="text-xs font-bold uppercase tracking-widest text-gray-500 block mb-2">Your Pitch</label>
+                    <textarea 
+                      rows="4" 
+                      value={applyModal.message}
+                      onChange={(e) => setApplyModal(prev => ({ ...prev, message: e.target.value }))}
+                      placeholder="e.g. I have extensive experience with React and can deliver this within 4 hours..."
+                      className="w-full p-4 border-2 border-gray-200 focus:border-daInfo-dark outline-none text-daInfo-dark font-medium"
+                    />
+                  </div>
+                  
+                  {applyStatus && (
+                    <div className={`p-3 text-xs font-bold uppercase tracking-widest ${applyStatus.type === 'success' ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'}`}>
+                      {applyStatus.msg}
+                    </div>
+                  )}
+
+                  <div className="flex gap-4 pt-2">
+                    <button 
+                      onClick={async () => {
+                        setApplyLoading(true);
+                        setApplyStatus(null);
+                        try {
+                          const token = localStorage.getItem('microgig_token');
+                          const res = await fetch(`/api/jobs/${selectedJob._id}/apply`, {
+                            method: 'POST',
+                            headers: { 
+                              'Content-Type': 'application/json',
+                              'Authorization': `Bearer ${token}`
+                            },
+                            body: JSON.stringify({ message: applyModal.message })
+                          });
+                          const data = await res.json();
+                          if (res.ok) {
+                            setApplyStatus({ type: 'success', msg: 'Application Sent!' });
+                            setTimeout(() => {
+                              setApplyModal({ shown: false, message: '' });
+                              setApplyStatus(null);
+                              setSelectedJob(null); // Close main modal too
+                            }, 1500);
+                          } else {
+                            setApplyStatus({ type: 'error', msg: data.message || 'Error applying' });
+                          }
+                        } catch (err) {
+                          setApplyStatus({ type: 'error', msg: 'Network error' });
+                        } finally {
+                          setApplyLoading(false);
+                        }
+                      }}
+                      disabled={applyLoading}
+                      className="flex-1 px-6 py-4 bg-daInfo-dark text-white font-bold uppercase tracking-widest hover:bg-black transition-colors disabled:opacity-50"
+                    >
+                      {applyLoading ? 'SENDING...' : 'SUBMIT APPLICATION'}
+                    </button>
+                    <button 
+                      onClick={() => setApplyModal({ shown: false, message: '' })}
+                      className="px-6 py-4 border-2 border-gray-200 font-bold uppercase tracking-widest hover:border-daInfo-dark transition-colors"
+                    >
+                      CANCEL
+                    </button>
+                  </div>
+               </div>
             </div>
           </div>
         )}
