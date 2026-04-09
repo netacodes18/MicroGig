@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { Bell, Check, ArrowRight, Briefcase, CheckCircle2, Inbox } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -100,8 +101,10 @@ export default function Notifications() {
         ) : (
           <div className="space-y-4">
             {notifications.map((n) => (
-              <div 
+              <motion.div 
                 key={n._id} 
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
                 className={`flex flex-col md:flex-row items-center gap-6 p-6 border-2 transition-all ${n.isRead ? 'bg-gray-50 border-gray-200 opacity-70' : 'bg-white border-black da-shadow-black'}`}
               >
                 <div className={`w-12 h-12 shrink-0 flex items-center justify-center border-2 border-black ${n.isRead ? 'bg-white text-gray-300' : 'bg-daInfo-pink text-white'}`}>
@@ -139,7 +142,7 @@ export default function Notifications() {
                      VIEW GIG
                    </button>
                 </div>
-              </div>
+              </motion.div>
             ))}
           </div>
         )}

@@ -13,7 +13,9 @@ connectDB();
 const app = express();
 
 // Middleware
-app.use(helmet());
+if (process.env.NODE_ENV === 'production') {
+  app.use(helmet());
+}
 app.use(cors({
   origin: [
     'http://localhost:5173',
