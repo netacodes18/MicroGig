@@ -1,0 +1,105 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * { 
+    margin: 0; 
+    padding: 0; 
+    box-sizing: border-box; 
+  }
+  
+  html { 
+    scroll-behavior: smooth; 
+  }
+
+  body {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    background-color: #ffffff; /* Stark white */
+    color: #000000; /* Stark black */
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  ::-webkit-scrollbar { width: 8px; }
+  ::-webkit-scrollbar-track { background: #f1f1f1; }
+  ::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 0; }
+  ::-webkit-scrollbar-thumb:hover { background: #9ca3af; }
+}
+
+@layer components {
+
+  /* ─── Grid pattern ─────────────────────────────── */
+  .da-grid-bg {
+    background-color: #ffffff;
+    background-image: 
+      linear-gradient(#f0f0f0 1px, transparent 1px),
+      linear-gradient(90deg, #f0f0f0 1px, transparent 1px);
+    background-size: 50px 50px;
+    background-position: center top;
+  }
+
+  /* ─── Typography ──────────────────────────────────── */
+  .da-heading {
+    @apply text-5xl md:text-7xl lg:text-8xl font-medium tracking-tight leading-[0.95] text-center;
+  }
+  
+  .da-blue-text {
+    color: #2563eb;
+  }
+
+  /* ─── Buttons ───────────────────────────────────── */
+  .da-btn-primary {
+    @apply relative inline-flex items-center gap-3 px-6 py-4 text-xs font-bold text-white uppercase tracking-widest transition-all duration-200 border-2 hover:bg-black;
+    background-color: #0a0a0a;
+    border-color: #0a0a0a;
+  }
+  .da-btn-primary::before {
+    content: '';
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    background-color: #ec4899; /* Little pink dot similar to screenshot btn */
+  }
+
+  .da-btn-outline {
+    @apply relative inline-flex items-center gap-3 px-6 py-4 text-xs font-bold uppercase tracking-widest transition-all duration-200 bg-transparent border-2;
+    color: #0a0a0a;
+    border-color: #0a0a0a;
+  }
+  .da-btn-outline:hover {
+    background-color: #fafafa;
+  }
+  .da-btn-outline::before {
+    content: '';
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    background-color: #22c55e; /* Little green dot */
+  }
+
+  /* ─── Sections ──────────────────────────────────── */
+  .da-section-dark {
+    @apply text-white;
+    background-color: #0a0a0a;
+  }
+
+  /* ─── Features Layout ───────────────────────────── */
+  .da-feature-list {
+    @apply grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-x-12 gap-y-16 max-w-7xl mx-auto px-6 py-20;
+  }
+  
+  .da-feature-item-title {
+    @apply text-sm font-bold uppercase tracking-widest mb-3 mt-6;
+  }
+  
+  .da-feature-item-desc {
+    @apply text-base text-gray-400 leading-relaxed max-w-sm;
+  }
+}
+
+@layer utilities {
+  .text-balance { text-wrap: balance; }
+}

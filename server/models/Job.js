@@ -1,0 +1,71 @@
+const mongoose = require('mongoose');
+
+const jobSchema = new mongoose.Schema({
+  title: {
+    type: String,
+    required: [true, 'Job title is required'],
+    trim: true,
+    maxlength: 100,
+  },
+  description: {
+    type: String,
+    required: [true, 'Description is required'],
+    maxlength: 2000,
+  },
+  category: {
+    type: String,
+    required: true,
+    enum: [
+      'Web Development', 'Mobile Development', 'Design',
+      'Machine Learning', 'Content Writing', 'DevOps',
+      'Backend Development', 'Data Science',
+    ],
+  },
+  skills: [{
+    type: String,
+    trim: true,
+  }],
+  budget: {
+    min: { type: Number, required: true },
+    max: { type: Number, required: true },
+    type: { type: String, enum: ['fixed', 'hourly'], default: 'fixed' },
+  },
+  duration: {
+    type: String,
+    required: true,
+  },
+  poster: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true,
+  },
+  assignedTo: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    default: null,
+  },
+  applicants: [{
+    user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    message: { type: String, default: '' },
+    appliedAt: { type: Date, default: Date.now },
+  }],
+  status: {
+    type: String,
+    enum: ['open', 'in-progress', 'completed', 'cancelled'],
+    default: 'open',
+  },
+  isUrgent: {
+    type: Boolean,
+    default: false,
+  },
+  isInstantHire: {
+    type: Boolean,
+    default: false,
+  },
+}, { timestamps: true });
+
+jobSchema.index({ category: 1, status: 1 });
+jobSchema.index({ skills: 1 });
+jobSchema.index({ poster: 1 });
+
+module.exports = mongoose.model('Job', jobSchema);
