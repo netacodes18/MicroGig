@@ -20,7 +20,8 @@ app.use(cors({
   origin: [
     'http://localhost:5173',
     process.env.FRONTEND_URL,
-    'https://gigly.vercel.app' // Optional: Common default for testing
+    'https://gigly.vercel.app',
+    'https://micro-gig-azure.vercel.app'
   ].filter(Boolean),
   credentials: true,
 }));
