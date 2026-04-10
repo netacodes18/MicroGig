@@ -170,7 +170,7 @@ export default function Jobs() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <div className="flex justify-between items-center mb-8 border-b border-gray-200 pb-4">
            <p className="text-sm font-bold uppercase tracking-widest text-gray-500">
-             {filtered.length} AVAILABLE GIG{filtered.length !== 1 ? 'S' : ''}
+             {filtered.length} AVAILABLE GIG{filtered.length !== 1 ? 'S' : ''} (V2)
            </p>
         </div>
 
