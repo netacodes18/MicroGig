@@ -198,8 +198,9 @@ export default function Jobs() {
                 {job.skills.map(s => <span key={s} className="px-2 py-1 bg-gray-100 text-gray-600 text-xs font-semibold">{s}</span>)}
               </div>
 
-              <div className="flex items-center justify-between pt-6 border-t border-gray-100">
-                <div className="flex flex-col">
+              {/* Pay & Time Section */}
+              <div className="flex items-center justify-between pt-6 border-t border-gray-100 mb-6">
+                <div className="flex flex-col text-left">
                    <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-1">Pay</p>
                    <span className="text-lg font-bold text-daInfo-dark">${job.budget.min} – ${job.budget.max}</span>
                 </div>
@@ -209,9 +210,16 @@ export default function Jobs() {
                 </div>
               </div>
 
-              <div className="flex items-center gap-3 mt-6 pt-6 border-t border-gray-100">
+              {/* ACTION BUTTON - ADDED THIS */}
+              <div className="pt-2">
+                 <button className="w-full py-4 bg-daInfo-dark text-white text-xs font-black uppercase tracking-[0.2em] da-shadow-black transition-all group-hover:bg-black">
+                    VIEW & APPLY
+                 </button>
+              </div>
+
+              <div className="flex items-center gap-3 mt-8 pt-6 border-t border-gray-100">
                 <img src={job.poster.avatar} alt="" className="w-8 h-8 object-cover border border-gray-200" />
-                <div>
+                <div className="text-left">
                   <span className="block text-xs font-bold text-daInfo-dark">{job.poster.name}</span>
                   <span className="block text-[10px] font-bold text-gray-500">★ {job.poster.rating} RATING</span>
                 </div>
