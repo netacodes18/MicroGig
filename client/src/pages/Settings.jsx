@@ -59,7 +59,7 @@ export default function Settings() {
       if (res.ok) {
         const updatedUser = await res.json();
         setUser(updatedUser);
-        setStatus({ type: 'success', msg: 'Profile updated successfully!' });
+        navigate('/dashboard');
       } else {
         const data = await res.json();
         setStatus({ type: 'error', msg: data.message || 'Failed to update profile' });
