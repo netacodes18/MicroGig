@@ -135,9 +135,22 @@ function PixelBorder() {
   );
 }
 
+const DEFAULT_FREELANCERS = [
+  { _id: 'f1', name: 'Alex Rivera', skills: ['Product Design'], rating: 4.9, reviewCount: 124 },
+  { _id: 'f2', name: 'Sarah Chen', skills: ['Full-stack'], rating: 4.8, reviewCount: 89 },
+  { _id: 'f3', name: 'Marcus Thorne', skills: ['AI/ML'], rating: 5.0, reviewCount: 56 },
+  { _id: 'f4', name: 'Elena Vance', skills: ['Cloud Arch'], rating: 4.7, reviewCount: 92 }
+];
+
+const DEFAULT_TESTIMONIALS = [
+  { _id: 't1', comment: "MicroGig has transformed how we scale our engineering team. The quality of talent is consistently top-tier.", reviewer: { name: "Jonathan Wright" } },
+  { _id: 't2', comment: "The speed of execution on this platform is unmatched. We had our dashboard ready in less than 48 hours.", reviewer: { name: "Aria Montgomery" } },
+  { _id: 't3', comment: "Clear communication and secure payments make it my go-to for all our UI/UX needs.", reviewer: { name: "Vikram Singh" } }
+];
+
 export default function Home() {
-  const [freelancers, setFreelancers] = useState([]);
-  const [testimonials, setTestimonials] = useState([]);
+  const [freelancers, setFreelancers] = useState(DEFAULT_FREELANCERS);
+  const [testimonials, setTestimonials] = useState(DEFAULT_TESTIMONIALS);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -148,15 +161,17 @@ export default function Home() {
           fetch('/api/reviews?limit=3&minRating=4')
         ]);
         
-        const [freeData, testData] = await Promise.all([
-          freeRes.json(),
-          testRes.json()
-        ]);
+        let freeData = [];
+        let testData = [];
 
-        setFreelancers(freeData);
-        setTestimonials(testData);
+        if (freeRes.ok) freeData = await freeRes.json();
+        if (testRes.ok) testData = await testRes.json();
+
+        if (freeData.length > 0) setFreelancers(freeData);
+        if (testData.length > 0) setTestimonials(testData);
       } catch (err) {
         console.error('Failed to fetch home data:', err);
+        // Fallbacks are already set in initial state
       } finally {
         setLoading(false);
       }

@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: microgig-api
+    runtime: node
+    plan: free
+    region: oregon
+    rootDir: server
+    buildCommand: npm install
+    startCommand: node server.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: MONGO_URI
+        fromConfig: true
+      - key: JWT_SECRET
+        fromConfig: true
+      - key: PORT
+        value: 10000
