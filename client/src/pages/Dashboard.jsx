@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { DollarSign, Star, Briefcase, Calendar, Clock, CheckCircle, Activity, Award, User, ChevronDown, ChevronUp, Settings as SettingsIcon } from 'lucide-react';
+import { DollarSign, Star, Briefcase, Calendar, Clock, CheckCircle, Activity, Award, User, ChevronDown, ChevronUp, Github, Linkedin, Globe, Settings as SettingsIcon } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 export default function Dashboard() {
@@ -161,7 +161,7 @@ export default function Dashboard() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        {isClient ? <ClientDashboardContent {...dashboardProps} /> : <FreelancerDashboardContent {...dashboardProps} />}
+        {isClient ? <ClientDashboardContent {...dashboardProps} /> : <FreelancerDashboardContent profile={profile} {...dashboardProps} />}
       </div>
 
       {/* SHARED SUBMIT MODAL */}
@@ -400,8 +400,9 @@ function ClientDashboardContent({ data, formatDate, actionLoading, handleApprove
 }
 
 // ----- FREELANCER DASHBOARD -----
-function FreelancerDashboardContent({ data, formatDate, setSubmissionModal }) {
+function FreelancerDashboardContent({ data, profile, formatDate, setSubmissionModal }) {
   const { recruitmentHistory, earnings, rating, completedGigs } = data;
+  const { skills, portfolio } = profile;
 
   return (
     <>
@@ -433,6 +434,56 @@ function FreelancerDashboardContent({ data, formatDate, setSubmissionModal }) {
           <div className="flex items-end justify-between mt-auto">
              <span className="text-3xl font-black text-daInfo-dark">{recruitmentHistory?.length || 0}</span>
              <Activity className="text-gray-300 w-8 h-8" />
+          </div>
+        </div>
+      </div>
+
+      <div className="grid md:grid-cols-2 gap-8 mb-16">
+        {/* Skills Section */}
+        <div className="border border-gray-200 p-8 text-left bg-white">
+          <h2 className="text-xs font-bold uppercase tracking-[0.2em] text-gray-400 mb-6 flex items-center gap-2">
+            <Award className="w-4 h-4" /> MASTERED SKILLS
+          </h2>
+          <div className="flex flex-wrap gap-2">
+            {skills && skills.length > 0 ? (
+              skills.map((skill, index) => (
+                <span key={index} className="px-3 py-1 bg-white border border-black text-[10px] font-bold uppercase tracking-widest da-shadow-black-sm">
+                  {skill}
+                </span>
+              ))
+            ) : (
+              <p className="text-sm text-gray-400 italic">No skills added yet. Update in settings.</p>
+            )}
+          </div>
+        </div>
+
+        {/* Digital Footprint Section */}
+        <div className="border border-gray-200 p-8 text-left bg-white">
+          <h2 className="text-xs font-bold uppercase tracking-[0.2em] text-gray-400 mb-6 flex items-center gap-2">
+            <Globe className="w-4 h-4" /> DIGITAL FOOTPRINT
+          </h2>
+          <div className="flex flex-wrap gap-6">
+            {portfolio?.github && (
+              <a href={portfolio.github} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-daInfo-dark hover:text-daInfo-blue transition-colors">
+                <Github className="w-5 h-5" />
+                <span className="text-[10px] font-bold uppercase tracking-widest border-b border-black">GITHUB</span>
+              </a>
+            )}
+            {portfolio?.linkedin && (
+              <a href={portfolio.linkedin} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-daInfo-dark hover:text-daInfo-blue transition-colors">
+                <Linkedin className="w-5 h-5" />
+                <span className="text-[10px] font-bold uppercase tracking-widest border-b border-black">LINKEDIN</span>
+              </a>
+            )}
+            {portfolio?.website && (
+              <a href={portfolio.website} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-daInfo-dark hover:text-daInfo-blue transition-colors">
+                <Globe className="w-5 h-5" />
+                <span className="text-[10px] font-bold uppercase tracking-widest border-b border-black">WEBSITE</span>
+              </a>
+            )}
+            {!portfolio?.github && !portfolio?.linkedin && !portfolio?.website && (
+              <p className="text-sm text-gray-400 italic">No links added yet. Update in settings.</p>
+            )}
           </div>
         </div>
       </div>
