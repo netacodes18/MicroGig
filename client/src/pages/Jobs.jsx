@@ -42,18 +42,18 @@ export default function Jobs() {
         if (selectedDuration) query.append('duration', selectedDuration);
         
         const res = await fetch(`/api/jobs?${query.toString()}`);
-        const data = await res.json();
-
-        // If client, filter to show only their own jobs (if needed, or handled by backend)
-        let filteredData = data;
-        if (authUser?.role === 'client') {
-          filteredData = data.filter(job => {
-             const posterId = typeof job.poster === 'object' ? job.poster._id : job.poster;
-             return posterId === authUser._id;
-          });
+        if (res.ok) {
+          const data = await res.json();
+          // If client, filter to show only their own jobs (if needed, or handled by backend)
+          let filteredData = data;
+          if (authUser?.role === 'client') {
+            filteredData = data.filter(job => {
+               const posterId = typeof job.poster === 'object' ? job.poster._id : job.poster;
+               return posterId === authUser._id;
+            });
+          }
+          setJobsData(filteredData);
         }
-        
-        setJobsData(filteredData);
       } catch (err) {
         console.error('Failed to fetch jobs:', err);
       } finally {

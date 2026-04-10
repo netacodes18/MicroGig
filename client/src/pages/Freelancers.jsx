@@ -19,8 +19,10 @@ export default function Freelancers() {
         if (verifiedOnly) query.append('verified', 'true');
         
         const res = await fetch(`/api/users?${query.toString()}`);
-        const data = await res.json();
-        setFreelancers(data);
+        if (res.ok) {
+          const data = await res.json();
+          setFreelancers(data);
+        }
       } catch (err) {
         console.error('Failed to fetch:', err);
       } finally {
