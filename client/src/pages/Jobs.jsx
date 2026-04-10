@@ -170,7 +170,7 @@ export default function Jobs() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <div className="flex justify-between items-center mb-8 border-b border-gray-200 pb-4">
            <p className="text-sm font-bold uppercase tracking-widest text-gray-500">
-             {filtered.length} AVAILABLE GIG{filtered.length !== 1 ? 'S' : ''} (V2)
+             {filtered.length} AVAILABLE GIG{filtered.length !== 1 ? 'S' : ''}
            </p>
         </div>
 
@@ -180,7 +180,7 @@ export default function Jobs() {
             <div 
               key={job._id} 
               onClick={() => setSelectedJob(job)}
-              className="border border-gray-200 hover:border-daInfo-dark transition-colors p-6 flex flex-col group cursor-pointer bg-white relative"
+              className="border border-gray-200 hover:border-black transition-all p-6 flex flex-col group cursor-pointer bg-white relative da-shadow-black-hover"
             >
               <div className="flex items-start justify-between mb-4">
                 <span className="text-xs font-bold uppercase tracking-widest text-gray-500">{job.category}</span>
@@ -198,30 +198,38 @@ export default function Jobs() {
                 {job.skills.map(s => <span key={s} className="px-2 py-1 bg-gray-100 text-gray-600 text-xs font-semibold">{s}</span>)}
               </div>
 
-              {/* Pay & Time Section */}
-              <div className="flex items-center justify-between pt-6 border-t border-gray-100 mb-6">
-                <div className="flex flex-col text-left">
-                   <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-1">Pay</p>
-                   <span className="text-lg font-bold text-daInfo-dark">${job.budget.min} – ${job.budget.max}</span>
+              {/* Bottom Info & Action */}
+              <div className="flex items-center justify-between pt-6 border-t border-gray-100">
+                <div className="flex gap-6">
+                  <div className="flex flex-col text-left">
+                     <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-1">Pay</p>
+                     <span className="text-sm font-bold text-daInfo-dark">${job.budget.min}–${job.budget.max}</span>
+                  </div>
+                  <div className="flex flex-col text-left">
+                     <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-1">Time</p>
+                     <span className="text-[10px] font-bold text-gray-600 uppercase tracking-tighter">{job.duration}</span>
+                  </div>
                 </div>
-                <div className="flex flex-col items-end">
-                   <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-1">Time</p>
-                   <span className="text-sm font-medium text-gray-700 flex items-center gap-1"><Clock className="w-3 h-3 text-gray-400" />{job.duration}</span>
+
+                <div className="pt-0">
+                   <button 
+                     onClick={(e) => {
+                       e.stopPropagation();
+                       setSelectedJob(job);
+                       setApplyModal({ shown: true, message: '', experience: '', contactInfo: '' });
+                     }}
+                     className="px-4 py-2 bg-daInfo-dark text-white text-[10px] font-black uppercase tracking-[0.2em] da-shadow-black hover:bg-black transition-all"
+                   >
+                      APPLY NOW
+                   </button>
                 </div>
               </div>
 
-              {/* ACTION BUTTON - ADDED THIS */}
-              <div className="pt-2">
-                 <button className="w-full py-4 bg-daInfo-dark text-white text-xs font-black uppercase tracking-[0.2em] da-shadow-black transition-all group-hover:bg-black">
-                    VIEW & APPLY
-                 </button>
-              </div>
-
-              <div className="flex items-center gap-3 mt-8 pt-6 border-t border-gray-100">
+              <div className="flex items-center gap-3 mt-6 pt-6 border-t border-gray-100">
                 <img src={job.poster.avatar} alt="" className="w-8 h-8 object-cover border border-gray-200" />
                 <div className="text-left">
-                  <span className="block text-xs font-bold text-daInfo-dark">{job.poster.name}</span>
-                  <span className="block text-[10px] font-bold text-gray-500">★ {job.poster.rating} RATING</span>
+                  <span className="block text-xs font-bold text-daInfo-dark leading-none">{job.poster.name}</span>
+                  <span className="block text-[10px] font-bold text-gray-500 mt-1">★ {job.poster.rating}</span>
                 </div>
               </div>
 
