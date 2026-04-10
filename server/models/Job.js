@@ -46,7 +46,9 @@ const jobSchema = new mongoose.Schema({
   },
   applicants: [{
     user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    experience: { type: String, default: '' },
     message: { type: String, default: '' },
+    contactInfo: { type: String, default: '' },
     appliedAt: { type: Date, default: Date.now },
   }],
   status: {

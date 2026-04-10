@@ -17,7 +17,7 @@ export default function Jobs() {
   const [maxBudget, setMaxBudget] = useState('');
   const [selectedDuration, setSelectedDuration] = useState('');
   const [selectedJob, setSelectedJob] = useState(null);
-  const [applyModal, setApplyModal] = useState({ shown: false, message: '' });
+  const [applyModal, setApplyModal] = useState({ shown: false, message: '', experience: '', contactInfo: '' });
   const [applyLoading, setApplyLoading] = useState(false);
   const [applyStatus, setApplyStatus] = useState(null);
 
@@ -338,19 +338,41 @@ export default function Jobs() {
         {/* APPLY MODAL */}
         {applyModal.shown && (
           <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
-            <div className="absolute inset-0 bg-gray-900/60 backdrop-blur-md" onClick={() => setApplyModal({ shown: false, message: '' })} />
-            <div className="relative bg-white w-full max-w-lg border-2 border-black da-shadow-lg-black p-8 animate-scale-in text-left">
-               <h3 className="text-2xl font-bold text-daInfo-dark uppercase tracking-tight mb-2">Apply for this Gig</h3>
-               <p className="text-gray-500 text-sm mb-6">Include a short note explaining why you're the best fit for this task.</p>
+            <div className="absolute inset-0 bg-gray-900/60 backdrop-blur-md" onClick={() => setApplyModal({ shown: false, message: '', experience: '', contactInfo: '' })} />
+            <div className="relative bg-white w-full max-w-xl border-2 border-black da-shadow-lg-black p-8 animate-scale-in text-left">
+               <h3 className="text-2xl font-black text-daInfo-dark uppercase tracking-tight mb-2">Gig Application Card</h3>
+               <p className="text-gray-500 text-sm mb-8 font-bold italic">This information will be sent directly to the employer's dashboard.</p>
                
-               <div className="space-y-4">
+               <div className="space-y-6">
                   <div>
-                    <label className="text-xs font-bold uppercase tracking-widest text-gray-500 block mb-2">Your Pitch</label>
+                    <label className="text-xs font-black uppercase tracking-widest text-daInfo-dark block mb-2">Relevant Experience</label>
+                    <input 
+                      type="text"
+                      value={applyModal.experience}
+                      onChange={(e) => setApplyModal(prev => ({ ...prev, experience: e.target.value }))}
+                      placeholder="e.g. 3 years in MERN stack development..."
+                      className="w-full p-4 border-2 border-gray-200 focus:border-daInfo-dark outline-none text-daInfo-dark font-medium"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-black uppercase tracking-widest text-daInfo-dark block mb-2">Cover Letter / Pitch</label>
                     <textarea 
                       rows="4" 
                       value={applyModal.message}
                       onChange={(e) => setApplyModal(prev => ({ ...prev, message: e.target.value }))}
-                      placeholder="e.g. I have extensive experience with React and can deliver this within 4 hours..."
+                      placeholder="Why should we hire you? Highlight your unique approach..."
+                      className="w-full p-4 border-2 border-gray-200 focus:border-daInfo-dark outline-none text-daInfo-dark font-medium resize-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-black uppercase tracking-widest text-daInfo-dark block mb-2">Direct Contact Information</label>
+                    <input 
+                      type="text"
+                      value={applyModal.contactInfo}
+                      onChange={(e) => setApplyModal(prev => ({ ...prev, contactInfo: e.target.value }))}
+                      placeholder="Email or Phone Number..."
                       className="w-full p-4 border-2 border-gray-200 focus:border-daInfo-dark outline-none text-daInfo-dark font-medium"
                     />
                   </div>
@@ -361,7 +383,7 @@ export default function Jobs() {
                     </div>
                   )}
 
-                  <div className="flex gap-4 pt-2">
+                  <div className="flex gap-4 pt-4">
                     <button 
                       onClick={async () => {
                         setApplyLoading(true);
@@ -374,13 +396,17 @@ export default function Jobs() {
                               'Content-Type': 'application/json',
                               'Authorization': `Bearer ${token}`
                             },
-                            body: JSON.stringify({ message: applyModal.message })
+                            body: JSON.stringify({ 
+                              message: applyModal.message,
+                              experience: applyModal.experience,
+                              contactInfo: applyModal.contactInfo
+                            })
                           });
                           const data = await res.json();
                           if (res.ok) {
-                            setApplyStatus({ type: 'success', msg: 'Application Sent!' });
+                            setApplyStatus({ type: 'success', msg: 'Application Deployed!' });
                             setTimeout(() => {
-                              setApplyModal({ shown: false, message: '' });
+                              setApplyModal({ shown: false, message: '', experience: '', contactInfo: '' });
                               setApplyStatus(null);
                               setSelectedJob(null); // Close main modal too
                             }, 1500);
@@ -394,13 +420,13 @@ export default function Jobs() {
                         }
                       }}
                       disabled={applyLoading}
-                      className="flex-1 px-6 py-4 bg-daInfo-dark text-white font-bold uppercase tracking-widest hover:bg-black transition-colors disabled:opacity-50"
+                      className="flex-1 px-6 py-4 bg-daInfo-dark text-white font-black uppercase tracking-widest hover:bg-black transition-colors disabled:opacity-50"
                     >
-                      {applyLoading ? 'SENDING...' : 'SUBMIT APPLICATION'}
+                      {applyLoading ? 'SENDING...' : 'COMMIT APPLICATION'}
                     </button>
                     <button 
-                      onClick={() => setApplyModal({ shown: false, message: '' })}
-                      className="px-6 py-4 border-2 border-gray-200 font-bold uppercase tracking-widest hover:border-daInfo-dark transition-colors"
+                      onClick={() => setApplyModal({ shown: false, message: '', experience: '', contactInfo: '' })}
+                      className="px-6 py-4 border-2 border-gray-200 font-bold uppercase tracking-widest hover:border-black transition-colors"
                     >
                       CANCEL
                     </button>

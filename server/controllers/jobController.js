@@ -71,7 +71,13 @@ exports.applyToJob = async (req, res, next) => {
     const alreadyApplied = job.applicants.some(a => a.user.toString() === req.user._id.toString());
     if (alreadyApplied) return res.status(400).json({ message: 'Already applied' });
 
-    job.applicants.push({ user: req.user._id, message: req.body.message || '' });
+    const { message, experience, contactInfo } = req.body;
+    job.applicants.push({ 
+      user: req.user._id, 
+      message: message || '',
+      experience: experience || '',
+      contactInfo: contactInfo || ''
+    });
     await job.save();
 
     // Trigger Notification for Client

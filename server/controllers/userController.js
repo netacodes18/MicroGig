@@ -79,6 +79,8 @@ exports.getDashboard = async (req, res, next) => {
             rating: a.user?.rating,
             skills: a.user?.skills || [],
             message: a.message,
+            experience: a.experience,
+            contactInfo: a.contactInfo,
             appliedAt: a.appliedAt
           }))
         });

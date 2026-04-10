@@ -362,7 +362,13 @@ function ClientDashboardContent({ data, formatDate, actionLoading, handleApprove
                                <h6 className="font-bold text-daInfo-dark truncate">{app.name}</h6>
                                <span className="text-[10px] font-bold uppercase bg-yellow-50 text-yellow-700 px-1.5 py-0.5 border border-yellow-200 shrink-0">★ {app.rating || 'N/A'}</span>
                              </div>
-                             <p className="text-xs text-gray-500 mt-1 mb-3 line-clamp-2 italic">"{app.message || "No cover letter provided."}"</p>
+                             <p className="text-xs text-daInfo-dark font-bold mt-2">Exp: {app.experience || "Not specified"}</p>
+                             <p className="text-xs text-gray-500 mt-1 mb-3 italic">"{app.message || "No cover letter provided."}"</p>
+                             {app.contactInfo && (
+                               <p className="text-[10px] font-black text-daInfo-blue mb-4 flex items-center gap-1">
+                                 <Globe className="w-3 h-3" /> {app.contactInfo}
+                               </p>
+                             )}
                               <div className="flex flex-wrap items-center justify-between gap-2 mt-auto">
                                 <div className="flex flex-wrap gap-1">
                                   {app.skills?.slice(0, 3).map(s => <span key={s} className="px-1.5 py-0.5 bg-gray-100 text-gray-500 text-[9px] uppercase font-bold tracking-widest">{s}</span>)}
