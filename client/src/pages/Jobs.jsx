@@ -5,7 +5,7 @@ import { useAuth } from '../context/AuthContext';
 
 // Cache Buster: v1.0.1 - Fixed ReferenceError
 export default function Jobs() {
-  const { user } = useAuth();
+  const { user: authUser } = useAuth();
   const navigate = useNavigate();
   const [jobsData, setJobsData] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -329,7 +329,7 @@ export default function Jobs() {
                     </div>
 
                     <div className="pt-2">
-                       {user?.role === 'client' ? (
+                       {authUser?.role === 'client' ? (
                           <button onClick={() => navigate('/dashboard')} className="w-full relative inline-flex items-center justify-center gap-3 px-6 py-5 text-sm font-bold text-white uppercase tracking-widest bg-daInfo-dark hover:bg-black transition-all group shadow-sm">
                              VIEW APPLICANTS
                              <span className="w-2 h-2 bg-daInfo-blue absolute right-5 group-hover:bg-white transition-colors" />
