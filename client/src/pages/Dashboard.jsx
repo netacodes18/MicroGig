@@ -10,6 +10,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [submissionModal, setSubmissionModal] = useState({ shown: false, jobId: null, content: '' });
   const [reviewModal, setReviewModal] = useState({ shown: false, jobId: null, freelancerId: null, rating: 5, comment: '' });
+  const [workViewModal, setWorkViewModal] = useState({ shown: false, content: '', title: '' });
   const [actionLoading, setActionLoading] = useState(false);
 
   useEffect(() => {
@@ -51,11 +52,24 @@ export default function Dashboard() {
     finally { setActionLoading(false); }
   };
 
-  const handleApprove = async (jobId, freelancerId) => {
+  const handleAccept = async (jobId) => {
     setActionLoading(true);
     try {
       const token = localStorage.getItem('microgig_token');
-      const res = await fetch(`/api/jobs/${jobId}/approve`, {
+      const res = await fetch(`/api/jobs/${jobId}/accept`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) window.location.reload();
+    } catch (err) { console.error(err); }
+    finally { setActionLoading(false); }
+  };
+
+  const handlePay = async (jobId, freelancerId) => {
+    setActionLoading(true);
+    try {
+      const token = localStorage.getItem('microgig_token');
+      const res = await fetch(`/api/jobs/${jobId}/pay`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -123,8 +137,10 @@ export default function Dashboard() {
     formatDate,
     actionLoading,
     setSubmissionModal,
-    handleApprove,
-    setReviewModal
+    handleAccept,
+    handlePay,
+    setReviewModal,
+    setWorkViewModal
   };
 
   return (
@@ -231,12 +247,33 @@ export default function Dashboard() {
           </div>
         </div>
       )}
+      {/* WORK VIEW MODAL */}
+      {workViewModal.shown && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-gray-900/60 backdrop-blur-md" onClick={() => setWorkViewModal({ shown: false, content: '', title: '' })} />
+          <div className="relative bg-white w-full max-w-2xl border-2 border-black da-shadow-black p-10 animate-scale-in text-left">
+             <h3 className="text-3xl font-black text-daInfo-dark uppercase tracking-tighter mb-1">{workViewModal.title}</h3>
+             <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-8 border-b border-gray-100 pb-4">Submission Inspection</p>
+             
+             <div className="bg-gray-50 border-2 border-dashed border-gray-200 p-6 text-sm text-gray-700 leading-relaxed font-medium whitespace-pre-wrap max-h-[50vh] overflow-y-auto mb-8">
+                {workViewModal.content}
+             </div>
+
+             <button 
+               onClick={() => setWorkViewModal({ shown: false, content: '', title: '' })}
+               className="w-full py-4 border-2 border-black font-black uppercase tracking-widest hover:bg-gray-50 transition-colors"
+             >
+               DONE REVIEWING
+             </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
 // ----- CLIENT DASHBOARD -----
-function ClientDashboardContent({ data, formatDate, actionLoading, handleApprove }) {
+function ClientDashboardContent({ data, formatDate, actionLoading, handleAccept, handlePay, setWorkViewModal }) {
   const { postedJobs, clientStats } = data;
   const [expandedJobId, setExpandedJobId] = useState(null);
   const [hiringId, setHiringId] = useState(null);
@@ -316,9 +353,14 @@ function ClientDashboardContent({ data, formatDate, actionLoading, handleApprove
               >
                 <div>
                   <h4 className="font-bold text-daInfo-dark text-lg leading-tight">{job.title}</h4>
-                  <div className="flex gap-4 mt-2 text-xs font-bold text-gray-500 uppercase tracking-widest">
-                    <span>Status: <span className={job.status === 'open' ? 'text-green-600' : 'text-gray-500'}>{job.status}</span></span>
-                    <span>Applicants: {job.applicants?.length || 0}</span>
+                  <div className="flex gap-4 mt-2 text-xs font-bold uppercase tracking-widest">
+                    <span>Status: <span className={
+                      job.status === 'open' ? 'text-green-600' : 
+                      job.status === 'accepted' ? 'text-blue-600' :
+                      job.status === 'needs-review' ? 'text-daInfo-pink' :
+                      'text-gray-500'
+                    }>{job.status}</span></span>
+                    <span className="text-gray-500">Applicants: {job.applicants?.length || 0}</span>
                     <span className="hidden sm:inline">Posted: {formatDate(job.createdAt)}</span>
                   </div>
                 </div>
@@ -331,22 +373,62 @@ function ClientDashboardContent({ data, formatDate, actionLoading, handleApprove
               {expandedJobId === job._id && (
                  <div className="bg-gray-50 border-t border-gray-200 p-5 md:p-8 animate-scale-in">
                    
-                   {/* SHOW SUBMISSION IF IN REVIEW */}
-                   {job.status === 'needs-review' && (
-                     <div className="mb-8 p-6 bg-white border-4 border-daInfo-dark da-shadow-black">
-                        <h5 className="text-xs font-black uppercase tracking-widest text-daInfo-dark mb-4 flex items-center gap-2">
-                          <CheckCircle className="w-4 h-4" /> WORK SUBMISSION
-                        </h5>
-                        <div className="p-4 bg-gray-50 border border-gray-200 text-sm italic text-gray-700 mb-6 whitespace-pre-wrap">
-                           {job.submission?.content}
+                   {/* 3-STEP APPROVAL WORKFLOW */}
+                   {(job.status === 'needs-review' || job.status === 'accepted') && (
+                     <div className="mb-10 p-8 bg-white border-2 border-black da-shadow-black">
+                        <div className="flex items-center justify-between mb-8 pb-4 border-b border-gray-100">
+                          <h5 className="text-sm font-black uppercase tracking-widest text-daInfo-dark flex items-center gap-2">
+                             <CheckCircle className="w-5 h-5 text-daInfo-blue" /> APPROVAL WORKFLOW
+                          </h5>
+                          <span className={`text-[10px] font-black uppercase px-2 py-0.5 border ${job.status === 'accepted' ? 'bg-blue-50 border-blue-200 text-blue-600' : 'bg-pink-50 border-pink-200 text-daInfo-pink'}`}>
+                            {job.status === 'accepted' ? 'READY FOR PAYMENT' : 'PENDING REVIEW'}
+                          </span>
                         </div>
-                        <button 
-                          onClick={() => handleApprove(job._id, job.applicants?.[0]?.id)}
-                          disabled={actionLoading}
-                          className="w-full py-4 bg-daInfo-blue text-white font-black uppercase tracking-widest hover:bg-daInfo-dark transition-all da-shadow-black active:translate-x-1 active:translate-y-1 active:shadow-none"
-                        >
-                          {actionLoading ? 'APPROVING...' : 'APPROVE & RELEASE FUNDS'}
-                        </button>
+
+                        <div className="grid sm:grid-cols-3 gap-4">
+                           {/* OPTION 1: REVIEW */}
+                           <button 
+                             onClick={() => setWorkViewModal({ shown: true, content: job.submission?.content, title: job.title })}
+                             className="flex flex-col items-center justify-center p-6 border-2 border-gray-200 hover:border-daInfo-blue hover:bg-daInfo-blue/5 transition-all group"
+                           >
+                              <Activity className="w-6 h-6 text-gray-300 group-hover:text-daInfo-blue mb-2" />
+                              <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 group-hover:text-daInfo-blue">1. Review Work</span>
+                           </button>
+
+                           {/* OPTION 2: ACCEPT */}
+                           <button 
+                             onClick={() => handleAccept(job._id)}
+                             disabled={actionLoading || job.status === 'accepted'}
+                             className={`flex flex-col items-center justify-center p-6 border-2 transition-all group ${
+                               job.status === 'accepted' 
+                               ? 'bg-blue-50 border-blue-200 cursor-default' 
+                               : 'border-gray-200 hover:border-green-500 hover:bg-green-50'
+                             }`}
+                           >
+                              <CheckCircle className={`w-6 h-6 mb-2 ${job.status === 'accepted' ? 'text-blue-500' : 'text-gray-300 group-hover:text-green-500'}`} />
+                              <span className={`text-[10px] font-black uppercase tracking-widest ${
+                                job.status === 'accepted' ? 'text-blue-500' : 'text-gray-400 group-hover:text-green-500'
+                              }`}>
+                                {job.status === 'accepted' ? 'COMPLETION ACCEPTED' : '2. Accept Completion'}
+                              </span>
+                           </button>
+
+                           {/* OPTION 3: PAY */}
+                           <button 
+                             onClick={() => handlePay(job._id, job.applicants?.[0]?.id)}
+                             disabled={actionLoading}
+                             className="flex flex-col items-center justify-center p-6 border-2 border-gray-200 hover:border-daInfo-pink hover:bg-pink-50 transition-all group"
+                           >
+                              <DollarSign className="w-6 h-6 text-gray-300 group-hover:text-daInfo-pink mb-2" />
+                              <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 group-hover:text-daInfo-pink">3. Pay Freelancer</span>
+                           </button>
+                        </div>
+
+                        {job.status === 'accepted' && (
+                          <div className="mt-6 flex items-center justify-center gap-3 py-2 bg-blue-50 text-blue-600 text-[10px] font-black uppercase tracking-widest animate-pulse">
+                             <Award className="w-4 h-4" /> Work accepted. Authorized for final payment.
+                          </div>
+                        )}
                      </div>
                    )}
 

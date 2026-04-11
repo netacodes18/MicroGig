@@ -171,24 +171,56 @@ exports.submitWork = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-// POST /api/jobs/:id/approve
-exports.approveWork = async (req, res, next) => {
+// POST /api/jobs/:id/accept
+exports.acceptWork = async (req, res, next) => {
   try {
     const job = await Job.findById(req.params.id);
 
     if (!job) return res.status(404).json({ message: 'Job not found' });
     if (job.poster.toString() !== req.user._id.toString()) {
-      return res.status(403).json({ message: 'Not authorized to approve for this job' });
+      return res.status(403).json({ message: 'Not authorized' });
     }
 
     if (job.status !== 'needs-review') {
       return res.status(400).json({ message: 'Job is not in review status' });
     }
 
+    job.status = 'accepted';
+    await job.save();
+
+    // Notify Freelancer
+    await Notification.create({
+      recipient: job.assignedTo,
+      sender: req.user._id,
+      type: 'other',
+      job: job._id,
+      message: `Your submission for "${job.title}" has been accepted! Proceeding to payment phase.`
+    });
+
+    res.json({ message: 'Work accepted', job });
+  } catch (err) { next(err); }
+};
+
+// POST /api/jobs/:id/pay
+exports.payFreelancer = async (req, res, next) => {
+  try {
+    const job = await Job.findById(req.params.id);
+
+    if (!job) return res.status(404).json({ message: 'Job not found' });
+    if (job.poster.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: 'Not authorized' });
+    }
+
+    // Allow paying from either needs-review or accepted
+    if (job.status !== 'needs-review' && job.status !== 'accepted') {
+      return res.status(400).json({ message: 'Job status invalid for payment' });
+    }
+
     job.status = 'completed';
     await job.save();
 
     // Update Freelancer Stats
+    const User = require('../models/User'); // Ensure User model is available
     const freelancer = await User.findById(job.assignedTo);
     if (freelancer) {
       freelancer.completedGigs += 1;
@@ -202,9 +234,9 @@ exports.approveWork = async (req, res, next) => {
       sender: req.user._id,
       type: 'other',
       job: job._id,
-      message: `Your submission for "${job.title}" has been approved! Funds released.`
+      message: `Payment authorized! Funds for "${job.title}" have been released to your account.`
     });
 
-    res.json({ message: 'Job approved and completed', job });
+    res.json({ message: 'Payment complete', job });
   } catch (err) { next(err); }
 };
