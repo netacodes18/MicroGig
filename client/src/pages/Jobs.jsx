@@ -213,18 +213,30 @@ export default function Jobs() {
                   </div>
                 </div>
 
-                <div className="pt-0">
-                   <button 
-                     onClick={(e) => {
-                       e.stopPropagation();
-                       setSelectedJob(job);
-                       setApplyModal({ shown: true, message: '', experience: '', contactInfo: '' });
-                     }}
-                     className="px-4 py-2 bg-daInfo-dark text-white text-[10px] font-black uppercase tracking-[0.2em] da-shadow-black hover:bg-black transition-all"
-                   >
-                      APPLY NOW
-                   </button>
-                </div>
+                 <div className="pt-0">
+                    {authUser?.role === 'client' || (authUser && job.poster?._id === authUser._id) ? (
+                       <button 
+                         onClick={(e) => {
+                           e.stopPropagation();
+                           setSelectedJob(job);
+                         }}
+                         className="px-4 py-2 border-2 border-daInfo-dark text-daInfo-dark text-[10px] font-black uppercase tracking-[0.2em] hover:bg-gray-50 transition-all font-bold"
+                       >
+                          VIEW GIG
+                       </button>
+                    ) : (
+                       <button 
+                         onClick={(e) => {
+                           e.stopPropagation();
+                           setSelectedJob(job);
+                           setApplyModal({ shown: true, message: '', experience: '', contactInfo: '' });
+                         }}
+                         className="px-4 py-2 bg-daInfo-dark text-white text-[10px] font-black uppercase tracking-[0.2em] da-shadow-black hover:bg-black transition-all"
+                       >
+                          APPLY NOW
+                       </button>
+                    )}
+                 </div>
               </div>
 
               <div className="flex items-center gap-3 mt-6 pt-6 border-t border-gray-100">
@@ -330,9 +342,18 @@ export default function Jobs() {
                     </div>
 
                     <div className="pt-2">
-                       {authUser?.role === 'client' ? (
-                          <button onClick={() => navigate('/dashboard')} className="w-full relative inline-flex items-center justify-center gap-3 px-6 py-5 text-sm font-bold text-white uppercase tracking-widest bg-daInfo-dark hover:bg-black transition-all group shadow-sm">
-                             VIEW APPLICANTS
+                       {authUser?.role === 'client' || (authUser && selectedJob.poster?._id === authUser._id) ? (
+                          <button 
+                            onClick={() => {
+                              if (selectedJob.poster?._id === authUser?._id) {
+                                navigate('/dashboard');
+                              } else {
+                                alert('Employer accounts cannot apply for gigs.');
+                              }
+                            }} 
+                            className="w-full relative inline-flex items-center justify-center gap-3 px-6 py-5 text-sm font-bold text-white uppercase tracking-widest bg-daInfo-dark hover:bg-black transition-all group shadow-sm"
+                          >
+                             {selectedJob.poster?._id === authUser?._id ? 'MANAGE THIS GIG' : 'CLIENT ACCOUNT'}
                              <span className="w-2 h-2 bg-daInfo-blue absolute right-5 group-hover:bg-white transition-colors" />
                           </button>
                        ) : (

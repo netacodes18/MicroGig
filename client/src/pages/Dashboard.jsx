@@ -13,6 +13,17 @@ export default function Dashboard() {
   const [workViewModal, setWorkViewModal] = useState({ shown: false, content: '', title: '' });
   const [actionLoading, setActionLoading] = useState(false);
 
+  // Load Razorpay Script
+  const loadRazorpay = () => {
+    return new Promise((resolve) => {
+      const script = document.createElement('script');
+      script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+      script.onload = () => resolve(true);
+      script.onerror = () => resolve(false);
+      document.body.appendChild(script);
+    });
+  };
+
   useEffect(() => {
     if (!user) return; // wait for user
     
@@ -66,23 +77,84 @@ export default function Dashboard() {
   };
 
   const handlePay = async (jobId, freelancerId) => {
-    if (!window.confirm('Are you sure you want to release the funds? This will complete the gig.')) return;
+    if (!window.confirm('Are you sure you want to proceed to payment release? This will open the secure Razorpay checkout.')) return;
     
     setActionLoading(true);
     try {
       const token = localStorage.getItem('microgig_token');
-      const res = await fetch(`/api/jobs/${jobId}/pay`, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (res.ok) {
-        alert('Payment released successfully! The gig is now completed.');
-        setReviewModal({ shown: true, jobId, revieweeId: freelancerId, rating: 5, comment: '', title: 'Review Freelancer' });
-      } else {
-        const errData = await res.json();
-        alert(`Error: ${errData.message}`);
+      
+      // 1. Load Razorpay script
+      const resScript = await loadRazorpay();
+      if (!resScript) {
+        alert('Razorpay SDK failed to load. Are you online?');
+        setActionLoading(false);
+        return;
       }
-    } catch (err) { console.error(err); }
+
+      // 2. Create Order on Backend
+      const orderRes = await fetch('/api/payments/order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ jobId })
+      });
+
+      if (!orderRes.ok) {
+        const err = await orderRes.json();
+        throw new Error(err.message || 'Failed to create order');
+      }
+
+      const orderData = await orderRes.json();
+
+      // 3. Open Razorpay Checkout
+      const options = {
+        key: 'rzp_test_placeholder_id', // Note: This should ideally come from backend or .env
+        amount: orderData.amount,
+        currency: orderData.currency,
+        name: 'MicroGig Marketplace',
+        description: `Payment for Job ID: ${jobId}`,
+        order_id: orderData.id,
+        handler: async (response) => {
+          // 4. Verify Payment on Backend
+          try {
+            const verifyRes = await fetch('/api/payments/verify', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+              body: JSON.stringify({
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature,
+                jobId
+              })
+            });
+
+            if (verifyRes.ok) {
+              alert('Payment successful and verified!');
+              setReviewModal({ shown: true, jobId, revieweeId: freelancerId, rating: 5, comment: '', title: 'Review Freelancer' });
+            } else {
+              const err = await verifyRes.json();
+              alert(`Verification Failed: ${err.message}`);
+            }
+          } catch (err) {
+            console.error(err);
+            alert('Verification Network Error');
+          }
+        },
+        prefill: {
+          name: user.name,
+          email: user.email
+        },
+        theme: {
+           color: '#0000FF'
+        }
+      };
+
+      const paymentObject = new window.Razorpay(options);
+      paymentObject.open();
+
+    } catch (err) { 
+      console.error(err); 
+      alert(`Payment Error: ${err.message}`);
+    }
     finally { setActionLoading(false); }
   };
 

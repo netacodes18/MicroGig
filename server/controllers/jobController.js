@@ -68,6 +68,16 @@ exports.applyToJob = async (req, res, next) => {
     const job = await Job.findById(req.params.id);
     if (!job) return res.status(404).json({ message: 'Job not found' });
 
+    // 1. Ownership check: Poster cannot apply for their own job
+    if (job.poster.toString() === req.user._id.toString()) {
+      return res.status(400).json({ message: 'You cannot apply for your own job listing' });
+    }
+
+    // 2. Role check: Only freelancers can apply
+    if (req.user.role !== 'freelancer') {
+      return res.status(403).json({ message: 'Only freelancer accounts can apply for gigs' });
+    }
+
     const alreadyApplied = job.applicants.some(a => a.user.toString() === req.user._id.toString());
     if (alreadyApplied) return res.status(400).json({ message: 'Already applied' });
 
