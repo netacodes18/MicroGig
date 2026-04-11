@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Search, Filter, Clock, Zap, X, MapPin, Briefcase } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
+// Cache Buster: v1.0.1 - Fixed ReferenceError
 export default function Jobs() {
   const { user } = useAuth();
   const navigate = useNavigate();
