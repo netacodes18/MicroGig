@@ -136,10 +136,10 @@ function PixelBorder() {
 }
 
 const DEFAULT_FREELANCERS = [
-  { _id: 'f1', name: 'Alex Rivera', skills: ['Product Design'], rating: 4.9, reviewCount: 124 },
-  { _id: 'f2', name: 'Sarah Chen', skills: ['Full-stack'], rating: 4.8, reviewCount: 89 },
-  { _id: 'f3', name: 'Marcus Thorne', skills: ['AI/ML'], rating: 5.0, reviewCount: 56 },
-  { _id: 'f4', name: 'Elena Vance', skills: ['Cloud Arch'], rating: 4.7, reviewCount: 92 }
+  { _id: 'f1', name: 'Alex Rivera', skills: ['Graphic Design'], rating: 4.9, reviewCount: 124 },
+  { _id: 'f2', name: 'Sarah Chen', skills: ['Marketing'], rating: 4.8, reviewCount: 89 },
+  { _id: 'f3', name: 'Marcus Thorne', skills: ['Accounting'], rating: 5.0, reviewCount: 56 },
+  { _id: 'f4', name: 'Elena Vance', skills: ['Photography'], rating: 4.7, reviewCount: 92 }
 ];
 
 const DEFAULT_TESTIMONIALS = [
@@ -329,7 +329,7 @@ export default function Home() {
           <div className="flex flex-col md:flex-row items-end justify-between mb-16">
             <div>
               <h2 className="text-4xl font-medium tracking-tight mb-4 text-left">Our Elite Network</h2>
-              <p className="text-gray-500 text-lg max-w-2xl text-left">Collaborate with the top 1% of independent specialists across design, engineering, and artificial intelligence.</p>
+              <p className="text-gray-500 text-lg max-w-2xl text-left">Collaborate with the top 1% of independent specialists across creative, business, and technical domains.</p>
             </div>
             <Link to="/freelancers" className="da-btn-outline mt-6 md:mt-0 shadow-sm">VIEW DIRECTORY</Link>
           </div>

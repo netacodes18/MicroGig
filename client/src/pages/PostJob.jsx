@@ -2,8 +2,9 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Briefcase, AlertCircle, Clock, Zap } from 'lucide-react';
 const categories = [
-  'Web Development', 'Mobile Development', 'Design', 'Machine Learning', 
-  'Content Writing', 'DevOps', 'Backend Development', 'Data Science'
+  'Technology & IT', 'Creative & Design', 'Writing & Translation',
+  'Marketing & Sales', 'Business & Operations', 'Lifestyle & Health',
+  'Photography & Media', 'Events & Hospitality', 'Other Services'
 ];
 
 export default function PostJob() {
@@ -105,7 +106,7 @@ export default function PostJob() {
             
             <div className="space-y-2">
               <label className="block text-xs font-bold text-daInfo-dark uppercase tracking-widest">Project Title</label>
-              <input type="text" name="title" required value={formData.title} onChange={handleChange} placeholder="e.g. Build a REST API with Express" className="w-full p-4 border border-gray-200 bg-gray-50 focus:bg-white focus:border-daInfo-dark outline-none font-medium text-daInfo-dark" />
+              <input type="text" name="title" required value={formData.title} onChange={handleChange} placeholder="e.g. Graphic Logo Design or Social Media Strategy" className="w-full p-4 border border-gray-200 bg-gray-50 focus:bg-white focus:border-daInfo-dark outline-none font-medium text-daInfo-dark" />
             </div>
 
             <div className="grid sm:grid-cols-2 gap-6">
@@ -117,7 +118,7 @@ export default function PostJob() {
               </div>
               <div className="space-y-2">
                 <label className="block text-xs font-bold text-daInfo-dark uppercase tracking-widest">Required Skills</label>
-                <input type="text" name="skills" required value={formData.skills} onChange={handleChange} placeholder="React, Node, Express (comma separated)" className="w-full p-4 border border-gray-200 bg-gray-50 focus:bg-white focus:border-daInfo-dark outline-none font-medium text-daInfo-dark" />
+                <input type="text" name="skills" required value={formData.skills} onChange={handleChange} placeholder="e.g. Branding, SEO, Accounting (comma separated)" className="w-full p-4 border border-gray-200 bg-gray-50 focus:bg-white focus:border-daInfo-dark outline-none font-medium text-daInfo-dark" />
               </div>
             </div>
 

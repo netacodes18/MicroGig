@@ -34,7 +34,7 @@ export default function Freelancers() {
     return () => clearTimeout(debounce);
   }, [search, selectedSkill, verifiedOnly]);
 
-  const topSkills = ['React', 'Node.js', 'Python', 'Figma', 'UI/UX', 'Flutter', 'AWS', 'Docker', 'TypeScript', 'MongoDB'];
+  const topSkills = ['Photography', 'Marketing', 'Accounting', 'React', 'Video Editing', 'Design', 'SEO', 'Data Analysis', 'Writing', 'Event Planning'];
 
   // Prevent body scrolling when modal is open
   useEffect(() => {

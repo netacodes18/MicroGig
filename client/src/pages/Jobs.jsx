@@ -25,8 +25,9 @@ export default function Jobs() {
 
 
   const categories = [
-    'Web Development', 'Mobile Development', 'Design', 'Machine Learning', 
-    'Content Writing', 'DevOps', 'Backend Development', 'Data Science'
+    'Technology & IT', 'Creative & Design', 'Writing & Translation',
+    'Marketing & Sales', 'Business & Operations', 'Lifestyle & Health',
+    'Photography & Media', 'Events & Hospitality', 'Other Services'
   ];
 
   useEffect(() => {

@@ -150,7 +150,7 @@ export default function Settings() {
                 type="text" 
                 value={formData.skills}
                 onChange={(e) => setFormData(p => ({ ...p, skills: e.target.value }))}
-                placeholder="React, Node.js, Python, UI Design..."
+                placeholder="Photography, Accounting, Branding, Writing..."
                 className="w-full p-4 border-2 border-black focus:bg-daInfo-blue/5 focus:border-daInfo-blue outline-none font-bold text-daInfo-dark transition-all"
               />
               <p className="text-[10px] text-gray-400 font-bold uppercase mt-2 italic">These keywords determine your visibility in searches.</p>
