@@ -9,7 +9,7 @@ export default function Dashboard() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [submissionModal, setSubmissionModal] = useState({ shown: false, jobId: null, content: '' });
-  const [reviewModal, setReviewModal] = useState({ shown: false, jobId: null, freelancerId: null, rating: 5, comment: '' });
+  const [reviewModal, setReviewModal] = useState({ shown: false, jobId: null, revieweeId: null, rating: 5, comment: '', title: '' });
   const [workViewModal, setWorkViewModal] = useState({ shown: false, content: '', title: '' });
   const [actionLoading, setActionLoading] = useState(false);
 
@@ -66,6 +66,8 @@ export default function Dashboard() {
   };
 
   const handlePay = async (jobId, freelancerId) => {
+    if (!window.confirm('Are you sure you want to release the funds? This will complete the gig.')) return;
+    
     setActionLoading(true);
     try {
       const token = localStorage.getItem('microgig_token');
@@ -74,10 +76,18 @@ export default function Dashboard() {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (res.ok) {
-        setReviewModal({ shown: true, jobId, freelancerId, rating: 5, comment: '' });
+        alert('Payment released successfully! The gig is now completed.');
+        setReviewModal({ shown: true, jobId, revieweeId: freelancerId, rating: 5, comment: '', title: 'Review Freelancer' });
+      } else {
+        const errData = await res.json();
+        alert(`Error: ${errData.message}`);
       }
     } catch (err) { console.error(err); }
     finally { setActionLoading(false); }
+  };
+
+  const handleReviewClient = (jobId, clientId, jobTitle) => {
+    setReviewModal({ shown: true, jobId, revieweeId: clientId, rating: 5, comment: '', title: `Review Client: ${jobTitle}` });
   };
 
   const handlePostReview = async () => {
@@ -89,13 +99,13 @@ export default function Dashboard() {
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ 
           job: reviewModal.jobId, 
-          reviewee: reviewModal.freelancerId, 
+          reviewee: reviewModal.revieweeId, 
           rating: reviewModal.rating, 
           comment: reviewModal.comment 
         })
       });
       if (res.ok) {
-        setReviewModal({ shown: false, jobId: null, freelancerId: null, rating: 5, comment: '' });
+        setReviewModal({ shown: false, jobId: null, revieweeId: null, rating: 5, comment: '', title: '' });
         window.location.reload();
       }
     } catch (err) { console.error(err); }
@@ -140,7 +150,8 @@ export default function Dashboard() {
     handleAccept,
     handlePay,
     setReviewModal,
-    setWorkViewModal
+    setWorkViewModal,
+    handleReviewClient
   };
 
   return (
@@ -177,7 +188,14 @@ export default function Dashboard() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        {isClient ? <ClientDashboardContent {...dashboardProps} /> : <FreelancerDashboardContent profile={profile} {...dashboardProps} />}
+        {isClient ? (
+          <ClientDashboardContent {...dashboardProps} />
+        ) : (
+          <FreelancerDashboardContent 
+            profile={profile} 
+            {...dashboardProps} 
+          />
+        )}
       </div>
 
       {/* SHARED SUBMIT MODAL */}
@@ -218,8 +236,8 @@ export default function Dashboard() {
                   <Star className="w-8 h-8 fill-white" />
                 </div>
              </div>
-             <h3 className="text-2xl font-black text-center text-daInfo-dark uppercase tracking-tight mb-2">Service Excellence</h3>
-             <p className="text-gray-500 text-sm text-center mb-8 font-bold">Rate your experience with this talent.</p>
+             <h3 className="text-2xl font-black text-center text-daInfo-dark uppercase tracking-tight mb-2">{reviewModal.title || 'Service Excellence'}</h3>
+             <p className="text-gray-500 text-sm text-center mb-8 font-bold">Rate your experience.</p>
              
              <div className="flex justify-center gap-2 mb-8">
                {[1,2,3,4,5].map(s => (
@@ -295,7 +313,7 @@ function ClientDashboardContent({ data, formatDate, actionLoading, handleAccept,
       
       if (res.ok) {
         alert('Freelancer hired successfully!');
-        window.location.reload(); // Simple way to refresh for now
+        window.location.reload();
       } else {
         const errData = await res.json();
         alert(`Error: ${errData.message}`);
@@ -373,7 +391,6 @@ function ClientDashboardContent({ data, formatDate, actionLoading, handleAccept,
               {expandedJobId === job._id && (
                  <div className="bg-gray-50 border-t border-gray-200 p-5 md:p-8 animate-scale-in">
                    
-                   {/* 3-STEP APPROVAL WORKFLOW */}
                    {(job.status === 'needs-review' || job.status === 'accepted') && (
                      <div className="mb-10 p-8 bg-white border-2 border-black da-shadow-black">
                         <div className="flex items-center justify-between mb-8 pb-4 border-b border-gray-100">
@@ -386,7 +403,6 @@ function ClientDashboardContent({ data, formatDate, actionLoading, handleAccept,
                         </div>
 
                         <div className="grid sm:grid-cols-3 gap-4">
-                           {/* OPTION 1: REVIEW */}
                            <button 
                              onClick={() => setWorkViewModal({ shown: true, content: job.submission?.content, title: job.title })}
                              className="flex flex-col items-center justify-center p-6 border-2 border-gray-200 hover:border-daInfo-blue hover:bg-daInfo-blue/5 transition-all group"
@@ -395,7 +411,6 @@ function ClientDashboardContent({ data, formatDate, actionLoading, handleAccept,
                               <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 group-hover:text-daInfo-blue">1. Review Work</span>
                            </button>
 
-                           {/* OPTION 2: ACCEPT */}
                            <button 
                              onClick={() => handleAccept(job._id)}
                              disabled={actionLoading || job.status === 'accepted'}
@@ -413,7 +428,6 @@ function ClientDashboardContent({ data, formatDate, actionLoading, handleAccept,
                               </span>
                            </button>
 
-                           {/* OPTION 3: PAY */}
                            <button 
                              onClick={() => handlePay(job._id, job.applicants?.[0]?.id)}
                              disabled={actionLoading}
@@ -427,6 +441,19 @@ function ClientDashboardContent({ data, formatDate, actionLoading, handleAccept,
                         {job.status === 'accepted' && (
                           <div className="mt-6 flex items-center justify-center gap-3 py-2 bg-blue-50 text-blue-600 text-[10px] font-black uppercase tracking-widest animate-pulse">
                              <Award className="w-4 h-4" /> Work accepted. Authorized for final payment.
+                          </div>
+                        )}
+
+                        {job.status === 'needs-review' && (
+                          <div className="mt-8 border-t border-gray-100 pt-8">
+                             <p className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] mb-4 text-center">Shortcut Action</p>
+                             <button 
+                               onClick={() => handlePay(job._id, job.applicants?.[0]?.id)}
+                               disabled={actionLoading}
+                               className="w-full py-4 bg-black text-white font-black uppercase tracking-widest hover:bg-daInfo-dark transition-all da-shadow-black"
+                             >
+                               {actionLoading ? 'PROCESSING...' : 'QUICK APPROVE & PAY'}
+                             </button>
                           </div>
                         )}
                      </div>
@@ -488,7 +515,7 @@ function ClientDashboardContent({ data, formatDate, actionLoading, handleAccept,
 }
 
 // ----- FREELANCER DASHBOARD -----
-function FreelancerDashboardContent({ data, profile, formatDate, setSubmissionModal }) {
+function FreelancerDashboardContent({ profile, data, formatDate, setSubmissionModal, setWorkViewModal, handleReviewClient }) {
   const { recruitmentHistory, earnings, rating, completedGigs } = data;
   const { skills, portfolio } = profile;
 
@@ -527,7 +554,6 @@ function FreelancerDashboardContent({ data, profile, formatDate, setSubmissionMo
       </div>
 
       <div className="grid md:grid-cols-2 gap-8 mb-16">
-        {/* Skills Section */}
         <div className="border border-gray-200 p-8 text-left bg-white">
           <h2 className="text-xs font-bold uppercase tracking-[0.2em] text-gray-400 mb-6 flex items-center gap-2">
             <Award className="w-4 h-4" /> MASTERED SKILLS
@@ -545,7 +571,6 @@ function FreelancerDashboardContent({ data, profile, formatDate, setSubmissionMo
           </div>
         </div>
 
-        {/* Digital Footprint Section */}
         <div className="border border-gray-200 p-8 text-left bg-white">
           <h2 className="text-xs font-bold uppercase tracking-[0.2em] text-gray-400 mb-6 flex items-center gap-2">
             <Globe className="w-4 h-4" /> DIGITAL FOOTPRINT
@@ -609,8 +634,15 @@ function FreelancerDashboardContent({ data, profile, formatDate, setSubmissionMo
                  
                  <div>
                     <span className="md:hidden text-xs font-bold uppercase text-gray-400 mr-2">Status:</span>
-                    <span className={`text-[10px] font-bold uppercase tracking-widest px-2 py-1 border ${historyItem.status === 'open' ? 'border-blue-200 text-blue-700 bg-blue-50' : historyItem.status === 'in-progress' ? 'border-yellow-200 text-yellow-700 bg-yellow-50' : historyItem.status === 'needs-review' ? 'border-daInfo-pink text-daInfo-pink bg-pink-50' : historyItem.status === 'completed' ? 'border-green-200 text-green-700 bg-green-50' : 'border-gray-200 text-gray-600 bg-gray-50'}`}>
-                       {historyItem.status || 'Applied'}
+                    <span className={`text-[10px] font-bold uppercase tracking-widest px-2 py-1 border ${
+                       historyItem.status === 'open' ? 'border-blue-200 text-blue-700 bg-blue-50' : 
+                       historyItem.status === 'in-progress' ? 'border-yellow-200 text-yellow-700 bg-yellow-50' : 
+                       historyItem.status === 'accepted' ? 'border-blue-300 text-blue-800 bg-blue-50' :
+                       historyItem.status === 'needs-review' ? 'border-daInfo-pink text-daInfo-pink bg-pink-50' : 
+                       historyItem.status === 'completed' ? 'border-green-200 text-green-700 bg-green-50' : 
+                       'border-gray-200 text-gray-600 bg-gray-50'
+                     }`}>
+                       {historyItem.status === 'accepted' ? 'AWAITING PAYMENT' : (historyItem.status || 'Applied')}
                     </span>
                  </div>
                  
@@ -623,6 +655,24 @@ function FreelancerDashboardContent({ data, profile, formatDate, setSubmissionMo
                          SUBMIT GIG
                        </button>
                     )}
+                    
+                    {(historyItem.status === 'needs-review' || historyItem.status === 'accepted' || historyItem.status === 'completed') && (
+                        <button 
+                          onClick={() => setWorkViewModal({ shown: true, content: historyItem.submission?.content, title: historyItem.title })}
+                          className="mr-4 text-[10px] font-black text-daInfo-pink border-b-2 border-daInfo-pink hover:text-daInfo-dark hover:border-daInfo-dark transition-all"
+                        >
+                          VIEW WORK
+                        </button>
+                     )}
+
+                     {historyItem.status === 'completed' && (
+                        <button 
+                          onClick={() => handleReviewClient(historyItem._id, historyItem.posterId, historyItem.title)}
+                          className="mr-4 text-[10px] font-black text-green-600 border-b-2 border-green-600 hover:text-daInfo-dark hover:border-daInfo-dark transition-all"
+                        >
+                          REVIEW CLIENT
+                        </button>
+                     )}
                     <span className="md:hidden text-xs font-bold uppercase text-gray-400 mr-2">Date:</span>
                     <Clock className="w-3 h-3" /> {formatDate(historyItem.date)}
                  </div>

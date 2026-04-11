@@ -103,28 +103,32 @@ exports.getDashboard = async (req, res, next) => {
     const history = [];
     appliedJobs.forEach(job => {
        const app = job.applicants.find(a => a.user.toString() === user._id.toString());
-       history.push({
-         _id: job._id,
-         title: job.title,
-         status: job.status,
-         poster: job.poster?.name || 'Unknown Client',
-         date: app ? app.appliedAt : job.createdAt,
-         role: 'Applicant',
-         budget: job.budget.max
-       });
+        history.push({
+          _id: job._id,
+          title: job.title,
+          status: job.status,
+          poster: job.poster?.name || 'Unknown Client',
+          posterId: job.poster?._id,
+          date: app ? app.appliedAt : job.createdAt,
+          role: 'Applicant',
+          budget: job.budget.max,
+          submission: job.submission || null
+        });
     });
 
     assignedJobs.forEach(job => {
        if (!history.find(h => h._id.toString() === job._id.toString())) {
-         history.push({
-           _id: job._id,
-           title: job.title,
-           status: job.status,
-           poster: job.poster?.name || 'Unknown Client',
-           date: job.createdAt,
-           role: 'Assigned Worker',
-           budget: job.budget.max
-         });
+          history.push({
+            _id: job._id,
+            title: job.title,
+            status: job.status,
+            poster: job.poster?.name || 'Unknown Client',
+            posterId: job.poster?._id,
+            date: job.createdAt,
+            role: 'Assigned Worker',
+            budget: job.budget.max,
+            submission: job.submission || null
+          });
        } else {
          const existing = history.find(h => h._id.toString() === job._id.toString());
          existing.role = 'Assigned Worker';
