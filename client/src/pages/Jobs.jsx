@@ -4,7 +4,7 @@ import { Search, Filter, Clock, Zap, X, MapPin, Briefcase } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 export default function Jobs() {
-  const { user: authUser } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [jobsData, setJobsData] = useState([]);
   const [loading, setLoading] = useState(true);
