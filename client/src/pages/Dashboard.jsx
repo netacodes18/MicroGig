@@ -98,9 +98,11 @@ export default function Dashboard() {
         body: JSON.stringify({ jobId })
       });
 
-      if (!orderRes.ok) {
-        const err = await orderRes.json();
-        throw new Error(err.message || 'Failed to create order');
+      const contentType = orderRes.headers.get("content-type");
+      if (!orderRes.ok || !contentType || !contentType.includes("application/json")) {
+        const text = await orderRes.text();
+        console.error('Non-JSON response:', text);
+        throw new Error(`Server Error (${orderRes.status}): Backend deployment might be pending or misconfigured.`);
       }
 
       const orderData = await orderRes.json();
@@ -127,13 +129,13 @@ export default function Dashboard() {
               })
             });
 
-            if (verifyRes.ok) {
-              alert('Payment successful and verified!');
-              setReviewModal({ shown: true, jobId, revieweeId: freelancerId, rating: 5, comment: '', title: 'Review Freelancer' });
-            } else {
-              const err = await verifyRes.json();
-              alert(`Verification Failed: ${err.message}`);
+            const vContentType = verifyRes.headers.get("content-type");
+            if (!verifyRes.ok || !vContentType || !vContentType.includes("application/json")) {
+              throw new Error(`Verification Failed (${verifyRes.status}): Backend error.`);
             }
+
+            const verifyData = await verifyRes.json();
+            alert('Payment successful and verified!');
           } catch (err) {
             console.error(err);
             alert('Verification Network Error');
