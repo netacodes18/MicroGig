@@ -41,7 +41,10 @@ exports.createOrder = async (req, res, next) => {
     };
 
     const order = await razorpay.orders.create(options);
-    res.json(order);
+    res.json({
+      ...order,
+      keyId: process.env.RAZORPAY_KEY_ID || 'rzp_test_placeholder_id'
+    });
   } catch (err) {
     next(err);
   }

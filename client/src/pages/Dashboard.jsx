@@ -109,7 +109,7 @@ export default function Dashboard() {
 
       // 3. Open Razorpay Checkout
       const options = {
-        key: 'rzp_test_placeholder_id', // Note: This should ideally come from backend or .env
+        key: orderData.keyId,
         amount: orderData.amount,
         currency: orderData.currency,
         name: 'MicroGig Marketplace',
