@@ -417,15 +417,15 @@ export default function Jobs() {
                       className="w-full p-4 border-2 border-gray-200 focus:border-daInfo-dark outline-none text-daInfo-dark font-medium"
                     />
                   </div>
-                  
-                      <label className="text-xs font-black uppercase tracking-widest text-daInfo-dark block mb-2">Resume / Portfolio (PDF)</label>
-                      <input 
-                        type="file"
-                        accept=".pdf"
-                        onChange={(e) => setApplyModal(prev => ({ ...prev, attachment: e.target.files[0] }))}
-                        className="w-full text-sm font-medium text-gray-500 file:mr-4 file:py-2 file:px-4 file:border-2 file:border-black file:bg-white file:text-black file:font-bold file:uppercase file:tracking-widest hover:file:bg-black hover:file:text-white transition-all cursor-pointer border-2 border-gray-200 p-2 focus:border-daInfo-dark"
-                      />
-                    </div>
+                  <div>
+                    <label className="text-xs font-black uppercase tracking-widest text-daInfo-dark block mb-2">Resume / Portfolio (PDF)</label>
+                    <input 
+                      type="file"
+                      accept=".pdf"
+                      onChange={(e) => setApplyModal(prev => ({ ...prev, attachment: e.target.files[0] }))}
+                      className="w-full text-sm font-medium text-gray-500 file:mr-4 file:py-2 file:px-4 file:border-2 file:border-black file:bg-white file:text-black file:font-bold file:uppercase file:tracking-widest hover:file:bg-black hover:file:text-white transition-all cursor-pointer border-2 border-gray-200 p-2 focus:border-daInfo-dark"
+                    />
+                  </div>
                   
                   {applyStatus && (
                     <div className={`p-3 text-xs font-bold uppercase tracking-widest ${applyStatus.type === 'success' ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'}`}>
