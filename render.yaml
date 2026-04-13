@@ -8,11 +8,13 @@ services:
     buildCommand: npm install
     startCommand: node server.js
     envVars:
-      - key: NODE_ENV
-        value: production
-      - key: MONGO_URI
-        fromConfig: true
-      - key: JWT_SECRET
-        fromConfig: true
-      - key: PORT
-        value: 10000
+    - key: RAZORPAY_KEY_ID
+      sync: false
+    - key: RAZORPAY_KEY_SECRET
+      sync: false
+    - key: MONGO_URI
+      fromConfig: true
+    - key: JWT_SECRET
+      fromConfig: true
+    - key: PORT
+      value: 10000
