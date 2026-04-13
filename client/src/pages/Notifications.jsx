@@ -126,12 +126,12 @@ export default function Notifications() {
               return (
                 <motion.div 
                   key={n._id} 
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  className={`flex flex-col md:flex-row items-center gap-6 p-6 border-2 transition-all ${n.isRead ? 'bg-gray-50 border-gray-200 opacity-80' : 'bg-white border-black da-shadow-black'}`}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className={`flex flex-col md:flex-row items-center gap-6 p-6 rounded-2xl transition-all duration-300 border ${n.isRead ? 'bg-gray-50 border-gray-100 opacity-80' : 'bg-white border-gray-200 shadow-sm hover:shadow-md'}`}
                 >
                   {/* Sender Avatar or Icon */}
-                  <div className={`w-14 h-14 shrink-0 flex items-center justify-center border-2 border-black overflow-hidden bg-white`}>
+                  <div className={`w-14 h-14 shrink-0 flex items-center justify-center rounded-xl overflow-hidden bg-gray-100 border border-gray-100`}>
                     {n.sender?.avatar ? (
                       <img src={n.sender.avatar} alt={n.sender.name} className="w-full h-full object-cover" />
                     ) : (
@@ -141,25 +141,28 @@ export default function Notifications() {
 
                   <div className="flex-1 text-center md:text-left">
                     <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 mb-2">
-                      <span className={`px-2 py-0.5 text-[8px] font-black text-white uppercase tracking-tighter ${getTypeColor(n.type)}`}>
+                      <span className={`px-2 py-0.5 text-[8px] font-black text-white uppercase tracking-tighter rounded-full ${getTypeColor(n.type)}`}>
                         {n.type}
                       </span>
-                      <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">
+                      <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400">
                         {new Date(n.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
                       </span>
                       {n.job?.title && (
-                        <span className="text-[10px] font-bold text-daInfo-blue uppercase tracking-widest border-l border-gray-200 pl-3">
-                          RE: {n.job.title}
+                        <span className="text-[10px] font-bold text-daInfo-blue uppercase tracking-widest bg-blue-50 px-2 py-0.5 rounded">
+                          {n.job.title}
                         </span>
                       )}
                     </div>
                     
-                    <h4 className={`text-md md:text-lg font-bold leading-tight ${n.isRead ? 'text-gray-500' : 'text-daInfo-dark'}`}>
+                    <h4 className={`text-md md:text-lg font-bold leading-tight ${n.isRead ? 'text-gray-400' : 'text-daInfo-dark'}`}>
                       {n.message}
                     </h4>
                     
                     {!n.isRead && (
-                      <p className="text-[9px] font-bold text-daInfo-pink mt-1 uppercase tracking-widest">Action Required</p>
+                      <p className="text-[9px] font-bold text-daInfo-pink mt-1 uppercase tracking-widest flex items-center gap-1">
+                        <span className="w-1 h-1 rounded-full bg-daInfo-pink animate-pulse" />
+                        Action Required
+                      </p>
                     )}
                   </div>
 
@@ -167,16 +170,15 @@ export default function Notifications() {
                      {!n.isRead && (
                        <button 
                          onClick={() => markRead(n._id)}
-                         className="p-3 border-2 border-black hover:bg-gray-100 transition-colors flex flex-col items-center justify-center gap-1 group"
+                         className="p-3 rounded-xl bg-gray-50 text-gray-400 hover:bg-daInfo-pink hover:text-white transition-all flex flex-col items-center justify-center gap-1 group"
                          title="Mark as Read"
                        >
                          <Check className="w-5 h-5" />
-                         <span className="text-[8px] font-black hidden group-hover:block">READ</span>
                        </button>
                      )}
                      <button 
                        onClick={() => handleActionClick(n)}
-                       className={`flex-1 md:flex-none px-6 py-3 font-black text-xs uppercase tracking-widest border-2 border-black transition-all ${n.isRead ? 'bg-white hover:bg-gray-50' : 'bg-daInfo-dark text-white hover:bg-black da-shadow-black active:shadow-none'}`}
+                       className={`flex-1 md:flex-none px-6 py-3 font-bold text-xs uppercase tracking-widest rounded-xl transition-all ${n.isRead ? 'bg-gray-100 text-gray-500 hover:bg-gray-200' : 'bg-daInfo-dark text-white hover:bg-black'}`}
                      >
                        {getAction(n)}
                      </button>
