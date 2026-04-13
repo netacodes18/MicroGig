@@ -51,8 +51,12 @@ export default function Navbar() {
             {user ? (
               <div className="flex items-center gap-6">
                 <NotificationCenter />
-                <Link to="/dashboard" className="text-xs font-semibold text-gray-500 hover:text-daInfo-dark tracking-widest uppercase">
-                  DASHBOARD
+                <Link to="/dashboard" className="hover:opacity-80 transition-opacity" title="Dashboard">
+                  <img 
+                    src={user.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.name}`} 
+                    alt={user.name}
+                    className="w-9 h-9 rounded-full border-2 border-gray-200 hover:border-daInfo-dark transition-colors object-cover"
+                  />
                 </Link>
                 <button onClick={logout} className="text-xs font-semibold text-gray-500 hover:text-daInfo-dark tracking-widest uppercase">
                   SIGN OUT
@@ -96,8 +100,13 @@ export default function Navbar() {
             <div className="pt-4 border-t border-gray-200 flex flex-col space-y-4">
               {user ? (
                 <>
-                  <Link to="/dashboard" className="text-sm font-bold text-gray-600 tracking-widest uppercase">
-                    DASHBOARD
+                  <Link to="/dashboard" className="flex items-center gap-3">
+                    <img 
+                      src={user.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.name}`} 
+                      alt={user.name}
+                      className="w-8 h-8 rounded-full border-2 border-gray-200 object-cover"
+                    />
+                    <span className="text-sm font-bold text-gray-600 tracking-widest uppercase">DASHBOARD</span>
                   </Link>
                   <button onClick={logout} className="text-left text-sm font-bold text-gray-600 tracking-widest uppercase">
                     SIGN OUT
