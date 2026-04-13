@@ -152,7 +152,13 @@ export default function Home() {
         if (testRes.ok) testData = await testRes.json();
 
         if (freeData.length > 0) setFreelancers(freeData);
-        if (testData.length > 0) setTestimonials(testData);
+        // Ensure at least 3 testimonials — blend real with defaults
+        if (testData.length >= 3) {
+          setTestimonials(testData.slice(0, 3));
+        } else if (testData.length > 0) {
+          const padded = [...testData, ...DEFAULT_TESTIMONIALS.slice(testData.length)];
+          setTestimonials(padded.slice(0, 3));
+        }
       } catch (err) {
         console.error('Failed to fetch home data:', err);
         // Fallbacks are already set in initial state
