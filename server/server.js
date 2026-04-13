@@ -2,6 +2,8 @@ const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
 const helmet = require('helmet');
+const compression = require('compression');
+const rateLimit = require('express-rate-limit');
 const connectDB = require('./config/db');
 
 // Load env vars
@@ -12,7 +14,21 @@ connectDB();
 
 const app = express();
 
+// Global Rate Limiter
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // Limit each IP to 100 requests per windowMs
+  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+  message: {
+    message: 'Too many requests from this IP, please try again after 15 minutes'
+  }
+});
+
 // Middleware
+app.use(compression());
+app.use(limiter);
+
 if (process.env.NODE_ENV === 'production') {
   app.use(helmet());
 }

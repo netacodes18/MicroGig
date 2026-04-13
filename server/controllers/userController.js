@@ -4,7 +4,7 @@ const Job = require('../models/Job');
 // GET /api/users — list freelancers
 exports.getUsers = async (req, res, next) => {
   try {
-    const { skill, sort, search, limit, featured, verified } = req.query;
+    const { skill, sort, search, limit = 12, page = 1, featured, verified } = req.query;
     let query = { role: 'freelancer' };
 
     if (skill) query.skills = { $in: skill.split(',') };
@@ -12,16 +12,25 @@ exports.getUsers = async (req, res, next) => {
     if (featured === 'true') query.rating = { $gte: 4.5 };
     if (verified === 'true') query.rating = { $gte: 4.2 };
 
-    let users = User.find(query).select('-password');
+    const parsedLimit = parseInt(limit, 10);
+    const parsedPage = parseInt(page, 10);
+    const skip = (parsedPage - 1) * parsedLimit;
+
+    let users = User.find(query).select('-password').lean();
 
     if (sort === 'rating') users = users.sort({ rating: -1 });
     else if (sort === 'gigs') users = users.sort({ completedGigs: -1 });
     else users = users.sort({ createdAt: -1 });
 
-    if (limit) users = users.limit(parseInt(limit));
+    const totalUsers = await User.countDocuments(query);
+    const result = await users.skip(skip).limit(parsedLimit);
 
-    const result = await users;
-    res.json(result);
+    res.json({
+      freelancers: result,
+      totalPages: Math.ceil(totalUsers / parsedLimit),
+      currentPage: parsedPage,
+      totalFreelancers: totalUsers
+    });
   } catch (err) { next(err); }
 };
 

@@ -75,5 +75,7 @@ const jobSchema = new mongoose.Schema({
 jobSchema.index({ category: 1, status: 1 });
 jobSchema.index({ skills: 1 });
 jobSchema.index({ poster: 1 });
+jobSchema.index({ status: 1, 'budget.max': -1, createdAt: -1 });
+jobSchema.index({ isUrgent: -1 });
 
 module.exports = mongoose.model('Job', jobSchema);

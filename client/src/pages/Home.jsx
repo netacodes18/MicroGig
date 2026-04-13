@@ -148,7 +148,10 @@ export default function Home() {
         let freeData = [];
         let testData = [];
 
-        if (freeRes.ok) freeData = await freeRes.json();
+        if (freeRes.ok) {
+          const parsed = await freeRes.json();
+          freeData = parsed.freelancers || parsed; 
+        }
         if (testRes.ok) testData = await testRes.json();
 
         if (freeData.length > 0) setFreelancers(freeData);

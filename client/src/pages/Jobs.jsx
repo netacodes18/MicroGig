@@ -23,6 +23,10 @@ export default function Jobs() {
   const [applyModal, setApplyModal] = useState({ shown: false, message: '', experience: '', contactInfo: '', attachment: null });
   const [applyLoading, setApplyLoading] = useState(false);
   const [applyStatus, setApplyStatus] = useState(null);
+  
+  // Pagination State
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
 
 
 
@@ -44,14 +48,23 @@ export default function Jobs() {
         if (minBudget) query.append('minBudget', minBudget);
         if (maxBudget) query.append('maxBudget', maxBudget);
         if (selectedDuration) query.append('duration', selectedDuration);
+        query.append('page', page);
+        query.append('limit', 12);
         
         const res = await fetch(`/api/jobs?${query.toString()}`);
         if (res.ok) {
           const data = await res.json();
-          // If client, filter to show only their own jobs (if needed, or handled by backend)
-          let filteredData = data;
+          const targetJobs = data.jobs || data; 
+          
+          if (data.totalPages) {
+            setTotalPages(data.totalPages);
+          } else {
+             setTotalPages(1);
+          }
+
+          let filteredData = targetJobs;
           if (authUser?.role === 'client') {
-            filteredData = data.filter(job => {
+            filteredData = targetJobs.filter(job => {
                const posterId = typeof job.poster === 'object' ? job.poster._id : job.poster;
                return posterId === authUser._id;
             });
@@ -67,7 +80,7 @@ export default function Jobs() {
 
     const timer = setTimeout(fetchJobs, 300);
     return () => clearTimeout(timer);
-  }, [search, selectedCategory, sortBy, authUser, minBudget, maxBudget, selectedDuration]);
+  }, [search, selectedCategory, sortBy, authUser, minBudget, maxBudget, selectedDuration, page]);
 
   const filtered = jobsData; // Already filtered/sorted by backend/effect
 
@@ -249,11 +262,33 @@ export default function Jobs() {
                 </div>
               </div>
 
-              {/* Hover effect bottom bar */}
               <div className="absolute bottom-0 left-0 w-full h-1 bg-daInfo-blue transform scale-x-0 group-hover:scale-x-100 transition-transform origin-left" />
             </div>
           ))}
         </div>
+
+        {/* Pagination Controls */}
+        {totalPages > 1 && (
+          <div className="flex justify-center items-center gap-4 mt-12 mb-8">
+            <button 
+              onClick={() => setPage(p => Math.max(1, p - 1))}
+              disabled={page === 1}
+              className="px-6 py-2 border-2 border-gray-200 font-bold uppercase tracking-widest text-xs hover:border-black disabled:opacity-30 transition-colors"
+            >
+              Previous
+            </button>
+            <span className="text-xs font-black text-gray-500 uppercase tracking-widest">
+              Page {page} of {totalPages}
+            </span>
+            <button 
+              onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+              disabled={page === totalPages}
+              className="px-6 py-2 border-2 border-gray-200 font-bold uppercase tracking-widest text-xs hover:border-black disabled:opacity-30 transition-colors"
+            >
+              Next
+            </button>
+          </div>
+        )}
 
         {filtered.length === 0 && (
           <div className="text-center py-32 border-2 border-dashed border-gray-200">
@@ -448,10 +483,10 @@ export default function Jobs() {
                             formData.append('attachment', applyModal.attachment);
                           }
 
-                          const res = await fetch(`/api/jobs/${selectedJob._id}/apply`, {
+                          const res = await fetch('/api/jobs/' + selectedJob._id + '/apply', {
                             method: 'POST',
                             headers: { 
-                              'Authorization': `Bearer ${token}`
+                              'Authorization': 'Bearer ' + token
                             },
                             body: formData
                           });

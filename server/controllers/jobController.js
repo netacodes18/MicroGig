@@ -4,7 +4,7 @@ const Notification = require('../models/Notification');
 // GET /api/jobs
 exports.getJobs = async (req, res, next) => {
   try {
-    const { category, skill, status, search, sort, minBudget, maxBudget, duration } = req.query;
+    const { category, skill, status, search, sort, minBudget, maxBudget, duration, page = 1, limit = 12 } = req.query;
     let query = {};
 
     if (category) query.category = category;
@@ -18,14 +18,25 @@ exports.getJobs = async (req, res, next) => {
     if (maxBudget) query['budget.max'] = { ...query['budget.max'], $lte: Number(maxBudget) };
     if (duration) query.duration = { $regex: duration, $options: 'i' };
 
-    let jobs = Job.find(query).populate('poster', 'name avatar rating');
+    const parsedLimit = parseInt(limit, 10);
+    const parsedPage = parseInt(page, 10);
+    const skip = (parsedPage - 1) * parsedLimit;
+
+    let jobs = Job.find(query).populate('poster', 'name avatar rating').lean();
 
     if (sort === 'budget') jobs = jobs.sort({ 'budget.max': -1 });
     else if (sort === 'urgent') jobs = jobs.sort({ isUrgent: -1, createdAt: -1 });
     else jobs = jobs.sort({ createdAt: -1 });
 
-    const result = await jobs;
-    res.json(result);
+    const totalJobs = await Job.countDocuments(query);
+    const result = await jobs.skip(skip).limit(parsedLimit);
+    
+    res.json({
+       jobs: result,
+       totalPages: Math.ceil(totalJobs / parsedLimit),
+       currentPage: parsedPage,
+       totalJobs
+    });
   } catch (err) { next(err); }
 };
 

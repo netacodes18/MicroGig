@@ -8,6 +8,10 @@ export default function Freelancers() {
   const [showFilters, setShowFilters] = useState(false);
   const [verifiedOnly, setVerifiedOnly] = useState(false);
   const [selectedFreelancer, setSelectedFreelancer] = useState(null);
+  
+  // Pagination State
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
 
   useEffect(() => {
     const fetchFreelancers = async () => {
@@ -17,11 +21,18 @@ export default function Freelancers() {
         if (search) query.append('search', search);
         if (selectedSkill) query.append('skill', selectedSkill);
         if (verifiedOnly) query.append('verified', 'true');
+        query.append('page', page);
+        query.append('limit', 12);
         
         const res = await fetch(`/api/users?${query.toString()}`);
         if (res.ok) {
           const data = await res.json();
-          setFreelancers(data);
+          setFreelancers(data.freelancers || data);
+          if (data.totalPages) {
+             setTotalPages(data.totalPages);
+          } else {
+             setTotalPages(1);
+          }
         }
       } catch (err) {
         console.error('Failed to fetch:', err);
@@ -32,7 +43,7 @@ export default function Freelancers() {
 
     const debounce = setTimeout(fetchFreelancers, 300);
     return () => clearTimeout(debounce);
-  }, [search, selectedSkill, verifiedOnly]);
+  }, [search, selectedSkill, verifiedOnly, page]);
 
   const topSkills = ['Photography', 'Marketing', 'Accounting', 'React', 'Video Editing', 'Design', 'SEO', 'Data Analysis', 'Writing', 'Event Planning'];
 
@@ -178,11 +189,33 @@ export default function Freelancers() {
                 </button>
               </div>
 
-              {/* Hover effect bottom bar */}
               <div className="absolute bottom-0 left-0 w-full h-1 bg-daInfo-blue transform scale-x-0 group-hover:scale-x-100 transition-transform origin-left" />
             </div>
           ))}
         </div>
+
+        {/* Pagination Controls */}
+        {totalPages > 1 && (
+          <div className="flex justify-center items-center gap-4 mt-12 mb-8">
+            <button 
+              onClick={() => setPage(p => Math.max(1, p - 1))}
+              disabled={page === 1}
+              className="px-6 py-2 border-2 border-gray-200 font-bold uppercase tracking-widest text-xs hover:border-black disabled:opacity-30 transition-colors"
+            >
+              Previous
+            </button>
+            <span className="text-xs font-black text-gray-500 uppercase tracking-widest">
+              Page {page} of {totalPages}
+            </span>
+            <button 
+              onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+              disabled={page === totalPages}
+              className="px-6 py-2 border-2 border-gray-200 font-bold uppercase tracking-widest text-xs hover:border-black disabled:opacity-30 transition-colors"
+            >
+              Next
+            </button>
+          </div>
+        )}
 
         {!loading && freelancers.length === 0 && (
           <div className="text-center py-32 border-2 border-dashed border-gray-200 mt-8">
