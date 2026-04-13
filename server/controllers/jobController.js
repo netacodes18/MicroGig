@@ -172,7 +172,7 @@ exports.submitWork = async (req, res, next) => {
     await Notification.create({
       recipient: job.poster,
       sender: req.user._id,
-      type: 'other',
+      type: 'submission',
       job: job._id,
       message: `${req.user.name} submitted work for: ${job.title}`
     });
@@ -202,7 +202,7 @@ exports.acceptWork = async (req, res, next) => {
     await Notification.create({
       recipient: job.assignedTo,
       sender: req.user._id,
-      type: 'other',
+      type: 'acceptance',
       job: job._id,
       message: `Your submission for "${job.title}" has been accepted! Proceeding to payment phase.`
     });

@@ -99,7 +99,7 @@ exports.verifyPayment = async (req, res, next) => {
         await Notification.create({
           recipient: job.assignedTo,
           sender: job.poster,
-          type: 'other',
+          type: 'payment',
           job: job._id,
           message: `Payment authorized! ₹${job.budget.max} has been added to your profile for "${job.title}".`
         });

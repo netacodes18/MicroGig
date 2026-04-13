@@ -100,50 +100,90 @@ export default function Notifications() {
           </div>
         ) : (
           <div className="space-y-4">
-            {notifications.map((n) => (
-              <motion.div 
-                key={n._id} 
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                className={`flex flex-col md:flex-row items-center gap-6 p-6 border-2 transition-all ${n.isRead ? 'bg-gray-50 border-gray-200 opacity-70' : 'bg-white border-black da-shadow-black'}`}
-              >
-                <div className={`w-12 h-12 shrink-0 flex items-center justify-center border-2 border-black ${n.isRead ? 'bg-white text-gray-300' : 'bg-daInfo-pink text-white'}`}>
-                  {n.type === 'apply' ? <Briefcase className="w-6 h-6" /> : 
-                   n.type === 'hire' ? <CheckCircle2 className="w-6 h-6" /> : 
-                   <Bell className="w-6 h-6" />}
-                </div>
+            {notifications.map((n) => {
+              // Contextual Action Mapping
+              const getAction = (notif) => {
+                switch(notif.type) {
+                  case 'submission': return 'REVIEW WORK';
+                  case 'apply': return 'MANAGE GIG';
+                  case 'hire': return 'MY DASHBOARD';
+                  case 'payment': return 'VIEW EARNINGS';
+                  case 'acceptance': return 'PROCEED TO PAY';
+                  default: return 'VIEW GIG';
+                }
+              };
 
-                <div className="flex-1 text-center md:text-left">
-                  <div className="flex items-center justify-center md:justify-start gap-2 mb-1">
-                    {!n.isRead && <span className="w-2 h-2 rounded-full bg-daInfo-pink" />}
-                    <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">
-                      {n.type} • {new Date(n.createdAt).toLocaleDateString()}
-                    </span>
+              const getTypeColor = (type) => {
+                switch(type) {
+                  case 'payment': return 'bg-daInfo-green';
+                  case 'hire': return 'bg-daInfo-blue';
+                  case 'submission': return 'bg-daInfo-pink';
+                  case 'apply': return 'bg-daInfo-dark';
+                  default: return 'bg-gray-400';
+                }
+              };
+
+              return (
+                <motion.div 
+                  key={n._id} 
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  className={`flex flex-col md:flex-row items-center gap-6 p-6 border-2 transition-all ${n.isRead ? 'bg-gray-50 border-gray-200 opacity-80' : 'bg-white border-black da-shadow-black'}`}
+                >
+                  {/* Sender Avatar or Icon */}
+                  <div className={`w-14 h-14 shrink-0 flex items-center justify-center border-2 border-black overflow-hidden bg-white`}>
+                    {n.sender?.avatar ? (
+                      <img src={n.sender.avatar} alt={n.sender.name} className="w-full h-full object-cover" />
+                    ) : (
+                      <Bell className="w-6 h-6 text-gray-300" />
+                    )}
                   </div>
-                  <h4 className={`text-lg font-bold leading-tight ${n.isRead ? 'text-gray-500' : 'text-daInfo-dark'}`}>
-                    {n.message}
-                  </h4>
-                </div>
 
-                <div className="flex gap-2 w-full md:w-auto">
-                   {!n.isRead && (
+                  <div className="flex-1 text-center md:text-left">
+                    <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 mb-2">
+                      <span className={`px-2 py-0.5 text-[8px] font-black text-white uppercase tracking-tighter ${getTypeColor(n.type)}`}>
+                        {n.type}
+                      </span>
+                      <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">
+                        {new Date(n.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                      </span>
+                      {n.job?.title && (
+                        <span className="text-[10px] font-bold text-daInfo-blue uppercase tracking-widest border-l border-gray-200 pl-3">
+                          RE: {n.job.title}
+                        </span>
+                      )}
+                    </div>
+                    
+                    <h4 className={`text-md md:text-lg font-bold leading-tight ${n.isRead ? 'text-gray-500' : 'text-daInfo-dark'}`}>
+                      {n.message}
+                    </h4>
+                    
+                    {!n.isRead && (
+                      <p className="text-[9px] font-bold text-daInfo-pink mt-1 uppercase tracking-widest">Action Required</p>
+                    )}
+                  </div>
+
+                  <div className="flex gap-2 w-full md:w-auto">
+                     {!n.isRead && (
+                       <button 
+                         onClick={() => markRead(n._id)}
+                         className="p-3 border-2 border-black hover:bg-gray-100 transition-colors flex flex-col items-center justify-center gap-1 group"
+                         title="Mark as Read"
+                       >
+                         <Check className="w-5 h-5" />
+                         <span className="text-[8px] font-black hidden group-hover:block">READ</span>
+                       </button>
+                     )}
                      <button 
-                       onClick={() => markRead(n._id)}
-                       className="p-3 border-2 border-black hover:bg-gray-100 transition-colors"
-                       title="Mark Read"
+                       onClick={() => handleActionClick(n)}
+                       className={`flex-1 md:flex-none px-6 py-3 font-black text-xs uppercase tracking-widest border-2 border-black transition-all ${n.isRead ? 'bg-white hover:bg-gray-50' : 'bg-daInfo-dark text-white hover:bg-black da-shadow-black active:shadow-none'}`}
                      >
-                       <Check className="w-5 h-5" />
+                       {getAction(n)}
                      </button>
-                   )}
-                   <button 
-                     onClick={() => handleActionClick(n)}
-                     className={`flex-1 md:flex-none px-6 py-3 font-black text-xs uppercase tracking-widest border-2 border-black transition-all ${n.isRead ? 'bg-white hover:bg-gray-50' : 'bg-daInfo-dark text-white hover:bg-black da-shadow-black active:shadow-none'}`}
-                   >
-                     VIEW GIG
-                   </button>
-                </div>
-              </motion.div>
-            ))}
+                  </div>
+                </motion.div>
+              );
+            })}
           </div>
         )}
       </div>

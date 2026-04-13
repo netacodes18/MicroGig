@@ -13,7 +13,7 @@ const notificationSchema = new mongoose.Schema({
   },
   type: {
     type: String,
-    enum: ['apply', 'hire', 'message', 'other'],
+    enum: ['apply', 'hire', 'message', 'submission', 'payment', 'acceptance', 'other'],
     required: true,
   },
   job: {
