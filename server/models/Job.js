@@ -49,6 +49,8 @@ const jobSchema = new mongoose.Schema({
     experience: { type: String, default: '' },
     message: { type: String, default: '' },
     contactInfo: { type: String, default: '' },
+    attachmentUrl: { type: String, default: '' },
+    attachmentName: { type: String, default: '' },
     appliedAt: { type: Date, default: Date.now },
   }],
   status: {

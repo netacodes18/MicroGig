@@ -20,7 +20,7 @@ export default function Jobs() {
   const [maxBudget, setMaxBudget] = useState('');
   const [selectedDuration, setSelectedDuration] = useState('');
   const [selectedJob, setSelectedJob] = useState(null);
-  const [applyModal, setApplyModal] = useState({ shown: false, message: '', experience: '', contactInfo: '' });
+  const [applyModal, setApplyModal] = useState({ shown: false, message: '', experience: '', contactInfo: '', attachment: null });
   const [applyLoading, setApplyLoading] = useState(false);
   const [applyStatus, setApplyStatus] = useState(null);
 
@@ -379,7 +379,7 @@ export default function Jobs() {
         {/* APPLY MODAL */}
         {applyModal.shown && (
           <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
-            <div className="absolute inset-0 bg-gray-900/60 backdrop-blur-md" onClick={() => setApplyModal({ shown: false, message: '', experience: '', contactInfo: '' })} />
+            <div className="absolute inset-0 bg-gray-900/60 backdrop-blur-md" onClick={() => setApplyModal({ shown: false, message: '', experience: '', contactInfo: '', attachment: null })} />
             <div className="relative bg-white w-full max-w-xl border-2 border-black da-shadow-lg-black p-8 animate-scale-in text-left">
                <h3 className="text-2xl font-black text-daInfo-dark uppercase tracking-tight mb-2">Gig Application Card</h3>
                <p className="text-gray-500 text-sm mb-8 font-bold italic">This information will be sent directly to the employer's dashboard.</p>
@@ -418,6 +418,15 @@ export default function Jobs() {
                     />
                   </div>
                   
+                      <label className="text-xs font-black uppercase tracking-widest text-daInfo-dark block mb-2">Resume / Portfolio (PDF)</label>
+                      <input 
+                        type="file"
+                        accept=".pdf"
+                        onChange={(e) => setApplyModal(prev => ({ ...prev, attachment: e.target.files[0] }))}
+                        className="w-full text-sm font-medium text-gray-500 file:mr-4 file:py-2 file:px-4 file:border-2 file:border-black file:bg-white file:text-black file:font-bold file:uppercase file:tracking-widest hover:file:bg-black hover:file:text-white transition-all cursor-pointer border-2 border-gray-200 p-2 focus:border-daInfo-dark"
+                      />
+                    </div>
+                  
                   {applyStatus && (
                     <div className={`p-3 text-xs font-bold uppercase tracking-widest ${applyStatus.type === 'success' ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'}`}>
                       {applyStatus.msg}
@@ -431,23 +440,26 @@ export default function Jobs() {
                         setApplyStatus(null);
                         try {
                           const token = localStorage.getItem('microgig_token');
+                          const formData = new FormData();
+                          formData.append('message', applyModal.message);
+                          formData.append('experience', applyModal.experience);
+                          formData.append('contactInfo', applyModal.contactInfo);
+                          if (applyModal.attachment) {
+                            formData.append('attachment', applyModal.attachment);
+                          }
+
                           const res = await fetch(`/api/jobs/${selectedJob._id}/apply`, {
                             method: 'POST',
                             headers: { 
-                              'Content-Type': 'application/json',
                               'Authorization': `Bearer ${token}`
                             },
-                            body: JSON.stringify({ 
-                              message: applyModal.message,
-                              experience: applyModal.experience,
-                              contactInfo: applyModal.contactInfo
-                            })
+                            body: formData
                           });
                           const data = await res.json();
                           if (res.ok) {
                             setApplyStatus({ type: 'success', msg: 'Application Deployed!' });
                             setTimeout(() => {
-                              setApplyModal({ shown: false, message: '', experience: '', contactInfo: '' });
+                              setApplyModal({ shown: false, message: '', experience: '', contactInfo: '', attachment: null });
                               setApplyStatus(null);
                               setSelectedJob(null); // Close main modal too
                             }, 1500);

@@ -87,6 +87,8 @@ exports.getDashboard = async (req, res, next) => {
             message: a.message,
             experience: a.experience,
             contactInfo: a.contactInfo,
+            attachmentUrl: a.attachmentUrl,
+            attachmentName: a.attachmentName,
             appliedAt: a.appliedAt
           }))
         });

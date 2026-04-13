@@ -561,18 +561,31 @@ function ClientDashboardContent({ data, formatDate, actionLoading, handleAccept,
                                 <div className="flex flex-wrap gap-1">
                                   {app.skills?.slice(0, 3).map(s => <span key={s} className="px-1.5 py-0.5 bg-gray-100 text-gray-500 text-[9px] uppercase font-bold tracking-widest">{s}</span>)}
                                 </div>
-                                {job.status === 'open' && (
-                                  <button 
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handleHire(job._id, app.id);
-                                    }}
-                                    disabled={hiringId === app.id}
-                                    className="px-3 py-1 bg-daInfo-dark text-white text-[10px] font-black uppercase tracking-widest hover:bg-black transition-colors disabled:opacity-50"
-                                  >
-                                    {hiringId === app.id ? 'HIRING...' : 'HIRE'}
-                                  </button>
-                                )}
+                                <div className="flex gap-2">
+                                  {app.attachmentUrl && (
+                                    <a 
+                                      href={app.attachmentUrl}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="px-3 py-1 border border-daInfo-dark text-daInfo-dark text-[10px] font-black uppercase tracking-widest hover:bg-gray-50 transition-colors flex items-center gap-1"
+                                      title={app.attachmentName}
+                                    >
+                                      VIEW PDF
+                                    </a>
+                                  )}
+                                  {job.status === 'open' && (
+                                    <button 
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleHire(job._id, app.id);
+                                      }}
+                                      disabled={hiringId === app.id}
+                                      className="px-3 py-1 bg-daInfo-dark text-white text-[10px] font-black uppercase tracking-widest hover:bg-black transition-colors disabled:opacity-50"
+                                    >
+                                      {hiringId === app.id ? 'HIRING...' : 'HIRE'}
+                                    </button>
+                                  )}
+                                </div>
                               </div>
                            </div>
                         </div>

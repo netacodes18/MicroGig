@@ -82,11 +82,21 @@ exports.applyToJob = async (req, res, next) => {
     if (alreadyApplied) return res.status(400).json({ message: 'Already applied' });
 
     const { message, experience, contactInfo } = req.body;
+    
+    let attachmentUrl = '';
+    let attachmentName = '';
+    if (req.file) {
+      attachmentUrl = req.file.path; // Cloudinary URL
+      attachmentName = req.file.originalname;
+    }
+
     job.applicants.push({ 
       user: req.user._id, 
       message: message || '',
       experience: experience || '',
-      contactInfo: contactInfo || ''
+      contactInfo: contactInfo || '',
+      attachmentUrl,
+      attachmentName
     });
     await job.save();
 

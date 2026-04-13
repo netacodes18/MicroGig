@@ -2,11 +2,13 @@ const router = require('express').Router();
 const { getJobs, getJobById, createJob, updateJob, applyToJob, deleteJob, hireFreelancer, submitWork, acceptWork, payFreelancer } = require('../controllers/jobController');
 const protect = require('../middleware/auth');
 
+const { upload } = require('../config/cloudinary');
+
 router.get('/', getJobs);
 router.get('/:id', getJobById);
 router.post('/', protect, createJob);
 router.put('/:id', protect, updateJob);
-router.post('/:id/apply', protect, applyToJob);
+router.post('/:id/apply', protect, upload.single('attachment'), applyToJob);
 router.post('/:id/hire', protect, hireFreelancer);
 router.post('/:id/submit', protect, submitWork);
 router.post('/:id/accept', protect, acceptWork);
