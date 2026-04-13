@@ -37,12 +37,18 @@ exports.getUserById = async (req, res, next) => {
 // PUT /api/users/:id
 exports.updateUser = async (req, res, next) => {
   try {
+    // Authorization: users can only update their own profile
+    if (req.params.id !== req.user._id.toString()) {
+      return res.status(403).json({ message: 'Not authorized to update this profile' });
+    }
+
     const { name, bio, skills, portfolio } = req.body;
     const user = await User.findByIdAndUpdate(
       req.params.id,
       { name, bio, skills, portfolio },
       { new: true, runValidators: true }
     ).select('-password');
+    if (!user) return res.status(404).json({ message: 'User not found' });
     res.json(user);
   } catch (err) { next(err); }
 };

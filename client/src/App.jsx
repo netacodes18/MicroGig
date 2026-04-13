@@ -14,6 +14,7 @@ import Contact from './pages/Contact';
 import Notifications from './pages/Notifications';
 import PostJob from './pages/PostJob';
 import Settings from './pages/Settings';
+import NotFound from './pages/NotFound';
 
 function Layout() {
   const location = useLocation();
@@ -51,6 +52,7 @@ function Layout() {
           <Route path="/contact" element={<Contact />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/notifications" element={<Notifications />} />
+          <Route path="*" element={<NotFound />} />
         </Routes>
       </main>
       {!hideFooter && <Footer />}

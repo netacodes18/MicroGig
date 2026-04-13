@@ -16,6 +16,7 @@ export default function Dashboard() {
   // Load Razorpay Script
   const loadRazorpay = () => {
     return new Promise((resolve) => {
+      if (window.Razorpay) return resolve(true);
       const script = document.createElement('script');
       script.src = 'https://checkout.razorpay.com/v1/checkout.js';
       script.onload = () => resolve(true);
@@ -136,6 +137,7 @@ export default function Dashboard() {
 
             const verifyData = await verifyRes.json();
             alert('Payment successful and verified!');
+            window.location.reload();
           } catch (err) {
             console.error(err);
             alert('Verification Network Error');
@@ -303,7 +305,7 @@ export default function Dashboard() {
       {/* SHARED REVIEW MODAL */}
       {reviewModal.shown && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-gray-900/60 backdrop-blur-md" />
+          <div className="absolute inset-0 bg-gray-900/60 backdrop-blur-md" onClick={() => setReviewModal({ shown: false, jobId: null, revieweeId: null, rating: 5, comment: '', title: '' })} />
           <div className="relative bg-white w-full max-w-lg border-2 border-black da-shadow-lg-pink p-8 animate-bounce-slow">
              <div className="flex justify-center mb-6">
                 <div className="w-16 h-16 bg-daInfo-pink rounded-full flex items-center justify-center text-white border-2 border-black animate-spin-slow">

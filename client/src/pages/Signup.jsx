@@ -27,11 +27,11 @@ export default function Signup() {
     setLoading(true);
     
     try {
-      const success = await signup(formData.name, formData.email, formData.password, formData.role, formData.dob);
-      if (success) {
+      const result = await signup(formData.name, formData.email, formData.password, formData.role, formData.dob);
+      if (result.success) {
         navigate('/dashboard');
       } else {
-        setError('Registration failed. Please try again.');
+        setError(result.error || 'Registration failed. Please try again.');
       }
     } catch (err) {
       setError('An error occurred during sign up. Please try again.');

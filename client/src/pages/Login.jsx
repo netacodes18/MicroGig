@@ -18,11 +18,11 @@ export default function Login() {
     setLoading(true);
     
     try {
-      const success = await login(email, password);
-      if (success) {
+      const result = await login(email, password);
+      if (result.success) {
         navigate('/dashboard');
       } else {
-        setError('Invalid credentials. Please try again.');
+        setError(result.error || 'Invalid credentials. Please try again.');
       }
     } catch (err) {
       setError('An error occurred during login. Please try again.');
@@ -31,9 +31,23 @@ export default function Login() {
     }
   };
 
-  const handleDemoLogin = () => {
+  const handleDemoLogin = async () => {
     setEmail('client@example.com');
     setPassword('password123');
+    setError('');
+    setLoading(true);
+    try {
+      const result = await login('client@example.com', 'password123');
+      if (result.success) {
+        navigate('/dashboard');
+      } else {
+        setError(result.error || 'Demo account not available.');
+      }
+    } catch (err) {
+      setError('Demo login failed.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -89,7 +103,7 @@ export default function Login() {
             <div className="relative">
               <div className="flex items-center justify-between mb-2">
                  <label className="block text-xs font-bold text-gray-700 uppercase tracking-widest">Password</label>
-                 <a href="#" className="text-xs font-bold text-gray-500 hover:text-daInfo-dark transition-colors uppercase tracking-widest">Forgot?</a>
+                 <button type="button" onClick={() => alert('Password reset is coming soon. Please contact support.')} className="text-xs font-bold text-gray-500 hover:text-daInfo-dark transition-colors uppercase tracking-widest">Forgot?</button>
               </div>
               <input
                 type="password"
