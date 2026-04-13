@@ -2,10 +2,12 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { DollarSign, Star, Briefcase, Calendar, Clock, CheckCircle, Activity, Award, User, ChevronDown, ChevronUp, Github, Linkedin, Globe, Settings as SettingsIcon } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../components/ui/Toast';
 
 export default function Dashboard() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const toast = useToast();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [submissionModal, setSubmissionModal] = useState({ shown: false, jobId: null, content: '' });
@@ -78,7 +80,7 @@ export default function Dashboard() {
   };
 
   const handlePay = async (jobId, freelancerId) => {
-    if (!window.confirm('Are you sure you want to proceed to payment release? This will open the secure Razorpay checkout.')) return;
+    // Payment confirmation is implicit — user clicked the Pay button
     
     setActionLoading(true);
     try {
@@ -87,7 +89,7 @@ export default function Dashboard() {
       // 1. Load Razorpay script
       const resScript = await loadRazorpay();
       if (!resScript) {
-        alert('Razorpay SDK failed to load. Are you online?');
+        toast.error('Razorpay SDK failed to load. Please check your internet connection.');
         setActionLoading(false);
         return;
       }
@@ -136,11 +138,11 @@ export default function Dashboard() {
             }
 
             const verifyData = await verifyRes.json();
-            alert('Payment successful and verified!');
-            window.location.reload();
+            toast.success('Payment successful and verified!');
+            setTimeout(() => window.location.reload(), 1500);
           } catch (err) {
             console.error(err);
-            alert('Verification Network Error');
+            toast.error('Payment verification failed. Please contact support.');
           }
         },
         prefill: {
@@ -157,7 +159,7 @@ export default function Dashboard() {
 
     } catch (err) { 
       console.error(err); 
-      alert(`Payment Error: ${err.message}`);
+      toast.error(`Payment Error: ${err.message}`);
     }
     finally { setActionLoading(false); }
   };
@@ -371,9 +373,10 @@ function ClientDashboardContent({ data, formatDate, actionLoading, handleAccept,
   const { postedJobs, clientStats } = data;
   const [expandedJobId, setExpandedJobId] = useState(null);
   const [hiringId, setHiringId] = useState(null);
+  const toast = useToast();
 
   const handleHire = async (jobId, freelancerId) => {
-    if (!window.confirm('Are you sure you want to hire this freelancer? This will start the gig.')) return;
+    // Hire confirmation is implicit — user clicked the Hire button
     
     setHiringId(freelancerId);
     try {
@@ -388,15 +391,15 @@ function ClientDashboardContent({ data, formatDate, actionLoading, handleAccept,
       });
       
       if (res.ok) {
-        alert('Freelancer hired successfully!');
-        window.location.reload();
+        toast.success('Freelancer hired successfully!');
+        setTimeout(() => window.location.reload(), 1500);
       } else {
         const errData = await res.json();
-        alert(`Error: ${errData.message}`);
+        toast.error(errData.message || 'Failed to hire freelancer.');
       }
     } catch (err) {
       console.error(err);
-      alert('Network error');
+      toast.error('Network error. Please try again.');
     } finally {
       setHiringId(null);
     }

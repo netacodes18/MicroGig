@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../components/ui/Toast';
 import { AlertCircle } from 'lucide-react';
 
 export default function Login() {
@@ -11,6 +12,7 @@ export default function Login() {
   
   const { login } = useAuth();
   const navigate = useNavigate();
+  const toast = useToast();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -103,7 +105,7 @@ export default function Login() {
             <div className="relative">
               <div className="flex items-center justify-between mb-2">
                  <label className="block text-xs font-bold text-gray-700 uppercase tracking-widest">Password</label>
-                 <button type="button" onClick={() => alert('Password reset is coming soon. Please contact support.')} className="text-xs font-bold text-gray-500 hover:text-daInfo-dark transition-colors uppercase tracking-widest">Forgot?</button>
+                 <button type="button" onClick={() => toast.info('Password reset is coming soon. Please contact support.')} className="text-xs font-bold text-gray-500 hover:text-daInfo-dark transition-colors uppercase tracking-widest">Forgot?</button>
               </div>
               <input
                 type="password"

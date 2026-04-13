@@ -2,11 +2,13 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, Filter, Clock, Zap, X, MapPin, Briefcase } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../components/ui/Toast';
 
 // Cache Buster: v1.0.1 - Fixed ReferenceError
 export default function Jobs() {
   const { user: authUser } = useAuth();
   const navigate = useNavigate();
+  const toast = useToast();
   const [jobsData, setJobsData] = useState([]);
   const [loading, setLoading] = useState(true);
   
@@ -348,7 +350,7 @@ export default function Jobs() {
                               if (selectedJob.poster?._id === authUser?._id) {
                                 navigate('/dashboard');
                               } else {
-                                alert('Employer accounts cannot apply for gigs.');
+                                toast.warning('Employer accounts cannot apply for gigs.');
                               }
                             }} 
                             className="w-full relative inline-flex items-center justify-center gap-3 px-6 py-5 text-sm font-bold text-white uppercase tracking-widest bg-daInfo-dark hover:bg-black transition-all group shadow-sm"

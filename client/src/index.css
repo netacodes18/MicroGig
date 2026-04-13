@@ -114,4 +114,19 @@
   .da-shadow-lg-black {
     box-shadow: 12px 12px 0px 0px #000000;
   }
+
+  @keyframes toast-in {
+    from {
+      opacity: 0;
+      transform: translateX(100%);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  .animate-toast-in {
+    animation: toast-in 0.35s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  }
 }
