@@ -36,7 +36,7 @@ export default function Contact() {
               CONTACT US
               <span className="w-8 h-[2px] bg-gray-200"></span>
             </div>
-            <h1 className="da-heading text-black mb-8">
+            <h1 className="text-4xl xs:text-5xl md:text-7xl font-bold mb-6 text-black tracking-tight leading-none text-center">
               GET IN<br/>
               <span className="da-blue-text italic">TOUCH</span>
             </h1>

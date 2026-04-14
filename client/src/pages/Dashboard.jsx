@@ -251,14 +251,14 @@ export default function Dashboard() {
                </div>
             </div>
             
-            <div className="flex items-center gap-4">
-              <Link to="/settings" className="da-btn-outline flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-4 mt-6 md:mt-0">
+              <Link to="/settings" className="flex-1 sm:flex-none da-btn-outline flex items-center justify-center gap-2">
                 <SettingsIcon className="w-4 h-4" /> SETTINGS
               </Link>
               {isClient ? (
-                 <Link to="/jobs/new" className="da-btn-outline bg-daInfo-dark text-white">POST A GIG</Link>
+                 <Link to="/jobs/new" className="flex-1 sm:flex-none da-btn-outline bg-daInfo-dark text-white text-center justify-center">POST A GIG</Link>
               ) : (
-                 <Link to="/jobs" className="da-btn-outline">BROWSE DOMAINS</Link>
+                 <Link to="/jobs" className="flex-1 sm:flex-none da-btn-outline text-center justify-center">BROWSE DOMAINS</Link>
               )}
             </div>
           </div>
@@ -278,9 +278,9 @@ export default function Dashboard() {
 
       {/* SHARED SUBMIT MODAL */}
       {submissionModal.shown && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-2 sm:p-4">
           <div className="absolute inset-0 bg-gray-900/60 backdrop-blur-md" onClick={() => setSubmissionModal({ shown: false, jobId: null, content: '' })} />
-          <div className="relative bg-white w-full max-w-lg border-2 border-black da-shadow-black p-8 animate-scale-in">
+          <div className="relative bg-white w-full max-w-lg border-2 border-black da-shadow-black p-6 sm:p-8 animate-scale-in">
              <h3 className="text-2xl font-black text-daInfo-dark uppercase tracking-tight mb-2">Final Submission</h3>
              <p className="text-gray-500 text-sm mb-6 font-bold">Paste your links or final summary below for client review.</p>
              <textarea 
@@ -472,16 +472,12 @@ function ClientDashboardContent({ data, formatDate, actionLoading, handleAccept,
                    
                    {(job.status === 'needs-review' || job.status === 'accepted') && (
                      <div className="mb-10 p-8 bg-white border-2 border-black da-shadow-black">
-                        <div className="flex items-center justify-between mb-8 pb-4 border-b border-gray-100">
-                          <h5 className="text-sm font-black uppercase tracking-widest text-daInfo-dark flex items-center gap-2">
-                             <CheckCircle className="w-5 h-5 text-daInfo-blue" /> APPROVAL WORKFLOW
-                          </h5>
-                          <span className={`text-[10px] font-black uppercase px-2 py-0.5 border ${job.status === 'accepted' ? 'bg-blue-50 border-blue-200 text-blue-600' : 'bg-pink-50 border-pink-200 text-daInfo-pink'}`}>
+                          <span className={`text-[10px] font-black uppercase px-2 py-0.5 border mt-2 sm:mt-0 ${job.status === 'accepted' ? 'bg-blue-50 border-blue-200 text-blue-600' : 'bg-pink-50 border-pink-200 text-daInfo-pink'}`}>
                             {job.status === 'accepted' ? 'READY FOR PAYMENT' : 'PENDING REVIEW'}
                           </span>
                         </div>
 
-                        <div className="grid sm:grid-cols-3 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                            <button 
                              onClick={() => setWorkViewModal({ shown: true, content: job.submission?.content, title: job.title })}
                              className="flex flex-col items-center justify-center p-6 border-2 border-gray-200 hover:border-daInfo-blue hover:bg-daInfo-blue/5 transition-all group"
@@ -636,11 +632,11 @@ function FreelancerDashboardContent({ profile, data, formatDate, setSubmissionMo
              <Star className="text-gray-300 w-8 h-8 fill-gray-300" />
           </div>
         </div>
-        <div className="border border-gray-200 bg-gray-50 p-6 flex flex-col justify-between h-32 hover:border-gray-300 transition-colors">
+        <div className="border border-gray-200 bg-gray-50 p-4 sm:p-6 flex flex-col justify-between h-28 sm:h-32 hover:border-gray-300 transition-colors">
           <p className="text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-1">Applications</p>
           <div className="flex items-end justify-between mt-auto">
-             <span className="text-3xl font-black text-daInfo-dark">{recruitmentHistory?.length || 0}</span>
-             <Activity className="text-gray-300 w-8 h-8" />
+             <span className="text-2xl sm:text-3xl font-black text-daInfo-dark">{recruitmentHistory?.length || 0}</span>
+             <Activity className="text-gray-300 w-6 h-6 sm:w-8 sm:h-8" />
           </div>
         </div>
       </div>

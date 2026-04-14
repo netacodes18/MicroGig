@@ -225,13 +225,13 @@ export default function Home() {
 
           <motion.div 
             initial="hidden" animate="visible" variants={fadeUp} custom={3}
-            className="flex flex-col sm:flex-row items-center justify-center gap-5"
+            className="flex flex-col xs:flex-row items-center justify-center gap-5 w-full max-w-[280px] xs:max-w-none mx-auto"
           >
-            <Link to="/signup" className="da-btn-primary text-sm px-8 py-5 group">
+            <Link to="/signup" className="da-btn-primary text-sm px-8 py-5 group w-full xs:w-auto justify-center">
               GET STARTED
               <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
             </Link>
-            <Link to="/jobs" className="da-btn-outline text-sm px-8 py-5">
+            <Link to="/jobs" className="da-btn-outline text-sm px-8 py-5 w-full xs:w-auto justify-center">
               EXPLORE GIGS
             </Link>
           </motion.div>
@@ -248,7 +248,10 @@ export default function Home() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: i * 0.1, duration: 0.5 }}
-              className={`py-10 px-6 text-center ${i < 3 ? 'border-r border-gray-200' : ''}`}
+              className={`py-10 px-6 text-center border-gray-200 
+                ${i % 2 === 0 ? 'border-r' : 'md:border-r'} 
+                ${i < 2 ? 'border-b md:border-b-0' : ''} 
+                ${i === 3 ? 'md:border-r-0' : ''}`}
             >
               <div className="text-3xl md:text-4xl font-bold text-daInfo-dark tracking-tight">{stat.value}</div>
               <div className="text-[10px] font-bold uppercase tracking-[0.25em] text-gray-400 mt-2">{stat.label}</div>

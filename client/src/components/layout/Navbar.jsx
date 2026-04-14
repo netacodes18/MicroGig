@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Menu, X } from 'lucide-react';
+import { Menu, X, ArrowRight } from 'lucide-react';
+import { AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../context/AuthContext';
 import NotificationCenter from './NotificationCenter';
 
@@ -84,44 +85,97 @@ export default function Navbar() {
         </div>
       </div>
 
-      {/* Mobile Menu */}
-      {isMobileOpen && (
-        <div className="lg:hidden bg-white border-b border-gray-200">
-          <div className="px-4 py-4 flex flex-col space-y-4">
-            {navLinks.map((link) => (
-              <Link
-                key={link.path}
-                to={link.path}
-                className="text-sm font-bold text-gray-600 tracking-widest uppercase"
-              >
-                {link.name}
-              </Link>
-            ))}
-            <div className="pt-4 border-t border-gray-200 flex flex-col space-y-4">
+      {/* Mobile Menu Overlay */}
+      <AnimatePresence>
+        {isMobileOpen && (
+          <motion.div 
+            initial={{ x: '100%' }}
+            animate={{ x: 0 }}
+            exit={{ x: '100%' }}
+            transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+            className="fixed inset-0 z-[60] bg-white flex flex-col pt-24 px-8"
+          >
+            <div className="flex flex-col space-y-8">
+              {navLinks.map((link, i) => (
+                <motion.div
+                  key={link.path}
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: i * 0.05 + 0.2 }}
+                >
+                  <Link
+                    to={link.path}
+                    onClick={() => setIsMobileOpen(false)}
+                    className="text-4xl font-black text-daInfo-dark tracking-tighter uppercase flex items-center justify-between group"
+                  >
+                    {link.name}
+                    <ArrowRight className="w-8 h-8 opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </Link>
+                </motion.div>
+              ))}
+            </div>
+
+            <div className="mt-auto pb-12 space-y-8">
+              <div className="h-[2px] bg-gray-100 w-full" />
               {user ? (
-                <>
-                  <Link to="/dashboard" className="flex items-center gap-3">
+                <div className="flex flex-col gap-6">
+                  <div className="flex items-center gap-4">
                     <img 
                       src={user.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.name}`} 
                       alt={user.name}
-                      className="w-8 h-8 rounded-full border-2 border-gray-200 object-cover"
+                      className="w-12 h-12 rounded-full border-2 border-gray-200"
                     />
-                    <span className="text-sm font-bold text-gray-600 tracking-widest uppercase">DASHBOARD</span>
-                  </Link>
-                  <button onClick={logout} className="text-left text-sm font-bold text-gray-600 tracking-widest uppercase">
-                    SIGN OUT
-                  </button>
-                </>
+                    <div>
+                      <p className="text-xs font-black text-gray-400 uppercase tracking-widest">Signed in as</p>
+                      <p className="text-lg font-bold text-daInfo-dark uppercase">{user.name}</p>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <Link 
+                      to="/dashboard" 
+                      onClick={() => setIsMobileOpen(false)}
+                      className="da-btn-outline justify-center py-4"
+                    >
+                      DASHBOARD
+                    </Link>
+                    <button 
+                      onClick={() => { logout(); setIsMobileOpen(false); }}
+                      className="text-xs font-black text-red-500 uppercase tracking-widest text-left"
+                    >
+                      DE-AUTHORIZE <br/> (SIGN OUT)
+                    </button>
+                  </div>
+                </div>
               ) : (
-                <>
-                  <Link to="/login" className="text-sm font-bold text-gray-600 tracking-widest uppercase">SIGN IN</Link>
-                  <Link to="/signup" className="text-sm font-bold text-daInfo-blue tracking-widest uppercase">APPLY NOW</Link>
-                </>
+                <div className="grid grid-cols-2 gap-4">
+                  <Link 
+                    to="/login" 
+                    onClick={() => setIsMobileOpen(false)}
+                    className="da-btn-outline justify-center py-4 text-center"
+                  >
+                    LOGIN
+                  </Link>
+                  <Link 
+                    to="/signup" 
+                    onClick={() => setIsMobileOpen(false)}
+                    className="da-btn-primary justify-center py-4 text-center"
+                  >
+                    APPLY NOW
+                  </Link>
+                </div>
               )}
             </div>
-          </div>
-        </div>
-      )}
+
+            {/* Close helper */}
+            <button 
+              onClick={() => setIsMobileOpen(false)}
+              className="absolute top-5 right-5 p-3 border-2 border-black"
+            >
+              <X className="w-8 h-8" />
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </nav>
   );
 }

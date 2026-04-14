@@ -137,9 +137,9 @@ export default function Jobs() {
               </div>
               <div>
                 <label className="text-xs font-bold uppercase tracking-widest text-gray-500 block mb-3">Sort Priority</label>
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
                   {[['newest', 'Newest'], ['budget', 'Highest Budget'], ['urgent', 'Urgent First']].map(([val, label]) => (
-                    <button key={val} onClick={() => setSortBy(val)} className={`px-4 py-2 border text-xs font-bold uppercase tracking-widest ${sortBy === val ? 'bg-daInfo-dark text-white border-daInfo-dark' : 'bg-white text-gray-600 border-gray-200 hover:border-gray-400'}`}>{label}</button>
+                    <button key={val} onClick={() => setSortBy(val)} className={`px-4 py-2 border text-[10px] sm:text-xs font-bold uppercase tracking-widest ${sortBy === val ? 'bg-daInfo-dark text-white border-daInfo-dark' : 'bg-white text-gray-600 border-gray-200 hover:border-gray-400'}`}>{label}</button>
                   ))}
                 </div>
               </div>
@@ -192,7 +192,7 @@ export default function Jobs() {
         </div>
 
         {/* Job Grid */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {filtered.map((job) => (
             <div 
               key={job._id} 
@@ -300,9 +300,9 @@ export default function Jobs() {
         
         {/* MODAL OVERLAY */}
         {selectedJob && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4">
             <div className="absolute inset-0 bg-gray-900/40 backdrop-blur-sm" onClick={() => setSelectedJob(null)} />
-            <div className="relative bg-white w-full max-w-4xl border border-gray-200 shadow-[8px_8px_0px_0px_rgba(10,10,10,1)] max-h-[90vh] flex flex-col animate-scale-in text-left">
+            <div className="relative bg-white w-full max-w-4xl border border-gray-200 shadow-[8px_8px_0px_0px_rgba(10,10,10,1)] max-h-[95vh] sm:max-h-[90vh] flex flex-col animate-scale-in text-left">
               
               {/* Modal Header */}
               <div className="shrink-0 bg-white border-b border-gray-200 p-6 flex flex-col md:flex-row items-start md:items-center justify-between z-10 gap-4">

@@ -127,7 +127,7 @@ export default function Freelancers() {
         </div>
 
         {/* Freelancers Grid */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {loading ? (
             Array(6).fill(0).map((_, i) => (
               <div key={i} className="h-64 border border-gray-100 animate-pulse bg-gray-50" />
@@ -227,9 +227,9 @@ export default function Freelancers() {
 
         {/* MODAL OVERLAY */}
         {selectedFreelancer && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4">
             <div className="absolute inset-0 bg-gray-900/40 backdrop-blur-sm" onClick={() => setSelectedFreelancer(null)} />
-            <div className="relative bg-white w-full max-w-3xl border border-gray-200 shadow-[8px_8px_0px_0px_rgba(10,10,10,1)] max-h-[90vh] flex flex-col animate-scale-in text-left">
+            <div className="relative bg-white w-full max-w-3xl border border-gray-200 shadow-[8px_8px_0px_0px_rgba(10,10,10,1)] max-h-[95vh] sm:max-h-[90vh] flex flex-col animate-scale-in text-left">
               
               {/* Modal Header */}
               <div className="shrink-0 bg-white border-b border-gray-200 p-6 flex flex-col md:flex-row items-start md:items-center justify-between z-10 gap-4">

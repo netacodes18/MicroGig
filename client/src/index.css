@@ -21,6 +21,8 @@
     color: #000000; /* Stark black */
     overflow-x: hidden;
     -webkit-font-smoothing: antialiased;
+    width: 100%;
+    position: relative;
   }
 
   ::-webkit-scrollbar { width: 8px; }
@@ -43,7 +45,7 @@
 
   /* ─── Typography ──────────────────────────────────── */
   .da-heading {
-    @apply text-5xl md:text-7xl lg:text-8xl font-medium tracking-tight leading-[0.95] text-center;
+    @apply text-4xl sm:text-5xl md:text-7xl lg:text-8xl font-medium tracking-tight leading-[0.95] text-center;
   }
   
   .da-blue-text {

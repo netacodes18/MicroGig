@@ -32,7 +32,7 @@ export default function About() {
             <Globe className="w-4 h-4 text-daInfo-dark" />
             <span className="text-xs font-bold uppercase tracking-widest text-gray-500">Our Story</span>
           </div>
-          <h1 className="text-5xl md:text-7xl font-bold mb-6 text-daInfo-dark tracking-tight leading-none">
+          <h1 className="text-4xl xs:text-5xl md:text-7xl font-bold mb-6 text-daInfo-dark tracking-tight leading-none">
             REDEFINING HOW <br /> THE WORLD WORKS.
           </h1>
           <p className="text-xl text-gray-600 max-w-2xl mx-auto font-medium">
@@ -78,9 +78,9 @@ export default function About() {
                 <div className="absolute -left-[5px] md:-left-[5px] top-0 w-2.5 h-2.5 bg-daInfo-dark border-2 border-white rounded-full" />
                 
                 <div className={`md:w-1/2 ${i % 2 === 0 ? 'md:pr-12 md:-ml-[50%] md:text-right text-left' : 'md:pl-12 md:ml-0 text-left'}`}>
-                  <div className="border border-gray-200 bg-white p-6 shadow-sm hover:border-daInfo-dark transition-colors">
+                  <div className="border border-gray-200 bg-white p-4 sm:p-6 shadow-sm hover:border-daInfo-dark transition-colors">
                     <span className="text-xs font-bold text-daInfo-blue uppercase tracking-widest block mb-2">{m.year}</span>
-                    <h3 className="text-xl font-bold text-daInfo-dark uppercase tracking-tight mb-2">{m.title}</h3>
+                    <h3 className="text-lg sm:text-xl font-bold text-daInfo-dark uppercase tracking-tight mb-2">{m.title}</h3>
                     <p className="text-sm text-gray-600 font-medium">{m.desc}</p>
                   </div>
                 </div>
