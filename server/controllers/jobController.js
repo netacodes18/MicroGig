@@ -1,5 +1,10 @@
 const Job = require('../models/Job');
 const Notification = require('../models/Notification');
+const { GoogleGenerativeAI } = require('@google/generative-ai');
+
+// Initialize Gemini
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
+const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
 // GET /api/jobs
 exports.getJobs = async (req, res, next) => {
@@ -101,13 +106,46 @@ exports.applyToJob = async (req, res, next) => {
       attachmentName = req.file.originalname;
     }
 
+    // 3. AI Vibe Match Calculation
+    let vibeMatch = 75; // Default fallback
+    if (process.env.GEMINI_API_KEY) {
+       try {
+          const prompt = `
+            Act as a talent acquisition expert for a micro-gig marketplace. 
+            Analyze the following Job and Applicant data to provide a 'Vibe Match' score from 0 to 100.
+            The score represents both technical fit and potential personal synergy.
+
+            JOB DATA:
+            Title: ${job.title}
+            Description: ${job.description}
+            Required Skills: ${job.skills.join(', ')}
+
+            APPLICANT DATA:
+            Skills: ${req.user.skills?.join(', ') || 'None listed'}
+            Bio: ${req.user.bio || 'None listed'}
+            Cover Letter: ${message || 'No message provided'}
+
+            Return ONLY a JSON object in this exact format: { "score": number }
+          `;
+          const result = await model.generateContent(prompt);
+          const response = await result.response;
+          const text = response.text();
+          const cleanJson = text.replace(/```json|```/g, '').trim();
+          const aiResult = JSON.parse(cleanJson);
+          vibeMatch = aiResult.score || 75;
+       } catch (err) {
+          console.error('Gemini Error:', err);
+       }
+    }
+
     job.applicants.push({ 
       user: req.user._id, 
       message: message || '',
       experience: experience || '',
       contactInfo: contactInfo || '',
       attachmentUrl,
-      attachmentName
+      attachmentName,
+      vibeMatch
     });
     await job.save();
 

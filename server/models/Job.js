@@ -52,6 +52,7 @@ const jobSchema = new mongoose.Schema({
     attachmentUrl: { type: String, default: '' },
     attachmentName: { type: String, default: '' },
     appliedAt: { type: Date, default: Date.now },
+    vibeMatch: { type: Number, default: 0 },
   }],
   status: {
     type: String,

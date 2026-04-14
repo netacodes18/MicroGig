@@ -1,6 +1,10 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { DollarSign, Star, Briefcase, Calendar, Clock, CheckCircle, Activity, Award, User, ChevronDown, ChevronUp, Github, Linkedin, Globe, Settings as SettingsIcon } from 'lucide-react';
+import { 
+  Briefcase, Activity, CheckCircle, Clock, Zap, Target, Search, Filter, 
+  Settings as SettingsIcon, LogOut, ChevronDown, ChevronUp, Star, Award,
+  DollarSign, FileText, Bot, Calendar
+} from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../components/ui/Toast';
 
