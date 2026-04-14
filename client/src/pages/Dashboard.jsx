@@ -471,6 +471,7 @@ function ClientDashboardContent({ data, formatDate, actionLoading, handleAccept,
                  <div className="bg-gray-50 border-t border-gray-200 p-5 md:p-8 animate-scale-in">
                    
                    {(job.status === 'needs-review' || job.status === 'accepted') && (
+                     <>
                      <div className="mb-10 p-8 bg-white border-2 border-black da-shadow-black">
                           <span className={`text-[10px] font-black uppercase px-2 py-0.5 border mt-2 sm:mt-0 ${job.status === 'accepted' ? 'bg-blue-50 border-blue-200 text-blue-600' : 'bg-pink-50 border-pink-200 text-daInfo-pink'}`}>
                             {job.status === 'accepted' ? 'READY FOR PAYMENT' : 'PENDING REVIEW'}
@@ -531,8 +532,8 @@ function ClientDashboardContent({ data, formatDate, actionLoading, handleAccept,
                              </button>
                           </div>
                         )}
-                     </div>
-                   )}
+                      </>
+                    )}
 
                    <h5 className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-4 border-b border-gray-200 pb-2">Talent Applications</h5>
                   
