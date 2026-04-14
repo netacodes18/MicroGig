@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { 
   Briefcase, Activity, CheckCircle, Clock, Zap, Target, Search, Filter, 
   Settings as SettingsIcon, LogOut, ChevronDown, ChevronUp, Star, Award,
-  DollarSign, FileText, Bot, Calendar
+  DollarSign, FileText, Bot, Calendar, User, Github, Linkedin, Globe
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../components/ui/Toast';
