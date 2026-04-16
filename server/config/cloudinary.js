@@ -12,9 +12,7 @@ const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: {
     folder: 'microgig/applications',
-    allowed_formats: ['pdf'], // Only PDFs as requested
-    // resource_type: 'raw' is needed for PDFs and non-image files in Cloudinary
-    resource_type: 'raw', 
+    resource_type: 'auto', 
   },
 });
 

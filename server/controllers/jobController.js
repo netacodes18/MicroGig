@@ -4,7 +4,7 @@ const { GoogleGenerativeAI } = require('@google/generative-ai');
 
 // Initialize Gemini
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
-const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
 
 // GET /api/jobs
 exports.getJobs = async (req, res, next) => {
@@ -81,6 +81,17 @@ exports.updateJob = async (req, res, next) => {
 // POST /api/jobs/:id/apply
 exports.applyToJob = async (req, res, next) => {
   try {
+    const mongoose = require('mongoose');
+    
+    // 0. Validate ObjectId
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ message: 'Invalid job ID format' });
+    }
+
+    console.log('[APPLY] User:', req.user?._id, '| Job:', req.params.id);
+    console.log('[APPLY] Body fields:', Object.keys(req.body));
+    console.log('[APPLY] File:', req.file ? req.file.originalname : 'none');
+
     const job = await Job.findById(req.params.id);
     if (!job) return res.status(404).json({ message: 'Job not found' });
 
@@ -133,8 +144,9 @@ exports.applyToJob = async (req, res, next) => {
           const cleanJson = text.replace(/```json|```/g, '').trim();
           const aiResult = JSON.parse(cleanJson);
           vibeMatch = aiResult.score || 75;
-       } catch (err) {
-          console.error('Gemini Error:', err);
+       } catch (aiErr) {
+          console.error('[APPLY] Gemini AI Error (non-fatal):', aiErr.message);
+          // Vibe match stays at default 75
        }
     }
 
@@ -158,8 +170,12 @@ exports.applyToJob = async (req, res, next) => {
       message: `${req.user.name} applied for your gig: ${job.title}`
     });
 
+    console.log('[APPLY] Success! User', req.user._id, 'applied to job', job._id);
     res.json({ message: 'Applied successfully' });
-  } catch (err) { next(err); }
+  } catch (err) {
+    console.error('[APPLY] CRITICAL ERROR:', err.message, err.stack);
+    next(err);
+  }
 };
 
 // DELETE /api/jobs/:id
