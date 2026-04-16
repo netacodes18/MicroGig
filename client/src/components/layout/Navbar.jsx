@@ -142,7 +142,7 @@ export default function Navbar() {
                       onClick={() => { logout(); setIsMobileOpen(false); }}
                       className="text-xs font-black text-red-500 uppercase tracking-widest text-left"
                     >
-                      DE-AUTHORIZE <br/> (SIGN OUT)
+                      SIGN OUT <br/> (LOGOUT)
                     </button>
                   </div>
                 </div>
