@@ -4,7 +4,7 @@ const { GoogleGenerativeAI } = require('@google/generative-ai');
 
 // Initialize Gemini
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
-const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
 
 // GET /api/jobs
 exports.getJobs = async (req, res, next) => {
@@ -376,6 +376,10 @@ exports.generateJobData = async (req, res, next) => {
     res.json(data);
   } catch (err) {
     console.error('[AI GENERATE ERROR]:', err.message);
-    res.status(500).json({ message: 'AI failed to generate content. Please try again.' });
+    res.status(500).json({ 
+      message: 'AI failed to generate content.',
+      error: err.message, // Expose for debugging
+      suggestion: 'Please check if your GEMINI_API_KEY is correctly set in Vercel environment variables.'
+    });
   }
 };
