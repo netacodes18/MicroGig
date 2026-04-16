@@ -93,6 +93,14 @@ export default function Jobs() {
     }
   }, [selectedJob]);
 
+  const hasApplied = (job) => {
+    if (!authUser || authUser.role !== 'freelancer') return false;
+    return job.applicants?.some(a => {
+      const applicantId = (a.user && typeof a.user === 'object') ? a.user._id : a.user;
+      return applicantId === authUser._id;
+    });
+  };
+
   return (
     <div className="min-h-screen bg-white">
       <div className="da-grid-bg pt-32 pb-20 border-b border-gray-200">
@@ -229,7 +237,7 @@ export default function Jobs() {
                 </div>
 
                  <div className="pt-0">
-                    {authUser?.role === 'client' || (authUser && job.poster?._id === authUser._id) ? (
+                    {authUser?.role === 'client' || (authUser && (job.poster?._id === authUser._id || job.poster === authUser._id)) ? (
                        <button 
                          onClick={(e) => {
                            e.stopPropagation();
@@ -238,6 +246,13 @@ export default function Jobs() {
                          className="px-4 py-2 border-2 border-daInfo-dark text-daInfo-dark text-[10px] font-black uppercase tracking-[0.2em] hover:bg-gray-50 transition-all font-bold"
                        >
                           VIEW GIG
+                       </button>
+                    ) : hasApplied(job) ? (
+                       <button 
+                         disabled
+                         className="px-4 py-2 bg-gray-50 text-daInfo-blue border border-daInfo-blue/20 text-[10px] font-black uppercase tracking-[0.2em] cursor-not-allowed opacity-80"
+                       >
+                          ALREADY APPLIED
                        </button>
                     ) : (
                        <button 
@@ -376,10 +391,8 @@ export default function Jobs() {
                           <span className="text-[10px] font-bold">★ {selectedJob.poster.rating}</span>
                         </div>
                       </div>
-                    </div>
-
-                    <div className="pt-2">
-                       {authUser?.role === 'client' || (authUser && selectedJob.poster?._id === authUser._id) ? (
+                                         <div className="pt-2">
+                       {authUser?.role === 'client' || (authUser && (selectedJob.poster?._id === authUser._id || selectedJob.poster === authUser._id)) ? (
                           <button 
                             onClick={() => {
                               if (selectedJob.poster?._id === authUser?._id) {
@@ -393,6 +406,14 @@ export default function Jobs() {
                              {selectedJob.poster?._id === authUser?._id ? 'MANAGE THIS GIG' : 'CLIENT ACCOUNT'}
                              <span className="w-2 h-2 bg-daInfo-blue absolute right-5 group-hover:bg-white transition-colors" />
                           </button>
+                       ) : hasApplied(selectedJob) ? (
+                          <button 
+                            disabled
+                            className="w-full relative inline-flex items-center justify-center gap-3 px-6 py-5 text-sm font-bold text-daInfo-blue uppercase tracking-widest bg-blue-50 border border-blue-100 cursor-not-allowed"
+                          >
+                             ALREADY APPLIED
+                             <span className="w-2 h-2 bg-daInfo-blue absolute right-5" />
+                          </button>
                        ) : (
                           <button 
                             onClick={() => setApplyModal({ shown: true, message: '' })}
@@ -402,7 +423,7 @@ export default function Jobs() {
                              <span className="w-2 h-2 bg-daInfo-blue absolute right-5 group-hover:bg-white transition-colors" />
                           </button>
                        )}
-                    </div>
+                    </div>  </div>
 
                   </div>
                 </div>
