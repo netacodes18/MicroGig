@@ -4,7 +4,7 @@ const { GoogleGenerativeAI } = require('@google/generative-ai');
 
 // Initialize Gemini
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
-const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
 // GET /api/jobs
 exports.getJobs = async (req, res, next) => {
@@ -141,9 +141,15 @@ exports.applyToJob = async (req, res, next) => {
           const result = await model.generateContent(prompt);
           const response = await result.response;
           const text = response.text();
-          const cleanJson = text.replace(/```json|```/g, '').trim();
-          const aiResult = JSON.parse(cleanJson);
-          vibeMatch = aiResult.score || 75;
+          
+          // Hardened extraction
+          const start = text.indexOf('{');
+          const end = text.lastIndexOf('}');
+          if (start !== -1 && end !== -1) {
+            const jsonStr = text.substring(start, end + 1).replace(/[\u0000-\u001F\u007F-\u009F]/g, "").trim();
+            const aiResult = JSON.parse(jsonStr);
+            vibeMatch = aiResult.score || 75;
+          }
        } catch (aiErr) {
           console.error('[APPLY] Gemini AI Error (non-fatal):', aiErr.message);
           // Vibe match stays at default 75
@@ -353,13 +359,20 @@ exports.generateJobData = async (req, res, next) => {
     const response = await result.response;
     const text = response.text();
     
-    // Attempt to extract JSON even if Gemini includes markdown fences
-    const jsonMatch = text.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) {
+    // Hardened JSON extraction
+    const start = text.indexOf('{');
+    const end = text.lastIndexOf('}');
+    
+    if (start === -1 || end === -1) {
+      console.error('[AI RAW RESPONSE]:', text);
       throw new Error('AI returned malformed data');
     }
     
-    const data = JSON.parse(jsonMatch[0]);
+    const jsonStr = text.substring(start, end + 1)
+      .replace(/[\u0000-\u001F\u007F-\u009F]/g, "") // Remove hidden control characters
+      .trim();
+      
+    const data = JSON.parse(jsonStr);
     res.json(data);
   } catch (err) {
     console.error('[AI GENERATE ERROR]:', err.message);
