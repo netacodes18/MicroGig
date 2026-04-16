@@ -565,7 +565,8 @@ function ClientDashboardContent({ data, formatDate, actionLoading, handleAccept,
                                 <div className="flex gap-2">
                                   {app.attachmentUrl && (
                                     <a 
-                                      href={app.attachmentUrl}
+                                      href={app.attachmentUrl.includes('cloudinary.com') ? app.attachmentUrl.replace('/upload/', '/upload/fl_attachment/') : app.attachmentUrl}
+                                      download={app.attachmentName || 'resume.pdf'}
                                       target="_blank"
                                       rel="noopener noreferrer"
                                       className="px-3 py-1 border border-daInfo-dark text-daInfo-dark text-[10px] font-black uppercase tracking-widest hover:bg-gray-50 transition-colors flex items-center gap-1"
