@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Briefcase, AlertCircle, Clock, Zap } from 'lucide-react';
+import { Briefcase, AlertCircle, Clock, Zap, Sparkles } from 'lucide-react';
 const categories = [
   'Technology & IT', 'Creative & Design', 'Writing & Translation',
   'Marketing & Sales', 'Business & Operations', 'Lifestyle & Health',
@@ -10,6 +10,7 @@ const categories = [
 export default function PostJob() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const [genLoading, setGenLoading] = useState(false);
   const [error, setError] = useState('');
   
   const [formData, setFormData] = useState({
@@ -30,6 +31,43 @@ export default function PostJob() {
       ...prev,
       [name]: type === 'checkbox' ? checked : value
     }));
+  };
+
+  const handleGenerateAI = async () => {
+    if (!formData.title) {
+       setError('Please enter a project title first so the AI knows what to generate!');
+       return;
+    }
+
+    setGenLoading(true);
+    setError('');
+    try {
+      const token = localStorage.getItem('microgig_token');
+      const res = await fetch('/api/jobs/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ title: formData.title })
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        setFormData(prev => ({
+          ...prev,
+          description: data.description || prev.description,
+          skills: data.skills ? data.skills.join(', ') : prev.skills,
+          duration: data.duration || prev.duration
+        }));
+      } else {
+        setError(data.message || 'AI generation failed.');
+      }
+    } catch (err) {
+      setError('Network error during AI generation.');
+    } finally {
+      setGenLoading(false);
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -105,8 +143,30 @@ export default function PostJob() {
             <h3 className="text-xs font-bold uppercase tracking-widest text-gray-500 border-b border-gray-200 pb-2">Core Parameters</h3>
             
             <div className="space-y-2">
-              <label className="block text-xs font-bold text-daInfo-dark uppercase tracking-widest">Project Title</label>
-              <input type="text" name="title" required value={formData.title} onChange={handleChange} placeholder="e.g. Graphic Logo Design or Social Media Strategy" className="w-full p-4 border border-gray-200 bg-gray-50 focus:bg-white focus:border-daInfo-dark outline-none font-medium text-daInfo-dark" />
+              <label className="block text-xs font-bold text-daInfo-dark uppercase tracking-widest flex justify-between">
+                Project Title
+                {genLoading && <span className="text-daInfo-blue animate-pulse">AI is thinking...</span>}
+              </label>
+              <div className="relative">
+                <input 
+                  type="text" 
+                  name="title" 
+                  required 
+                  value={formData.title} 
+                  onChange={handleChange} 
+                  placeholder="e.g. Graphic Logo Design or Social Media Strategy" 
+                  className="w-full p-4 pr-14 border border-gray-200 bg-gray-50 focus:bg-white focus:border-daInfo-dark outline-none font-medium text-daInfo-dark" 
+                />
+                <button
+                  type="button"
+                  onClick={handleGenerateAI}
+                  disabled={genLoading || !formData.title}
+                  title="Generate with AI"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-daInfo-dark text-white hover:bg-black transition-colors disabled:opacity-30 disabled:cursor-not-allowed group"
+                >
+                  <Sparkles className={`w-5 h-5 ${genLoading ? 'animate-spin' : 'group-hover:scale-110 transition-transform'}`} />
+                </button>
+              </div>
             </div>
 
             <div className="grid sm:grid-cols-2 gap-6">

@@ -325,3 +325,44 @@ exports.payFreelancer = async (req, res, next) => {
     res.json({ message: 'Payment complete', job });
   } catch (err) { next(err); }
 };
+
+// POST /api/jobs/generate
+exports.generateJobData = async (req, res, next) => {
+  try {
+    const { title } = req.body;
+    if (!title) return res.status(400).json({ message: 'Title is required for AI generation' });
+
+    if (!process.env.GEMINI_API_KEY) {
+      return res.status(503).json({ message: 'AI Service currently unavailable (API Key missing)' });
+    }
+
+    const prompt = `
+      Act as a high-end recruitment consultant for a micro-gig marketplace. 
+      Generate professional job post details for the title: "${title}".
+      
+      Requirements for response:
+      - Description: 2-3 detailed paragraphs focusing on scope, precision, and final deliverables.
+      - Skills: 5 relevant technical/soft skills.
+      - Duration: A realistic micro-gig timeline (e.g., '2 Days', '5 Hours', '1 Week').
+      
+      Return ONLY a JSON object with these keys: "description", "skills" (array of strings), and "duration".
+      Do not include any markdown fences or extra talk.
+    `;
+
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const text = response.text();
+    
+    // Attempt to extract JSON even if Gemini includes markdown fences
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+      throw new Error('AI returned malformed data');
+    }
+    
+    const data = JSON.parse(jsonMatch[0]);
+    res.json(data);
+  } catch (err) {
+    console.error('[AI GENERATE ERROR]:', err.message);
+    res.status(500).json({ message: 'AI failed to generate content. Please try again.' });
+  }
+};
