@@ -6,22 +6,7 @@ import api from '../../lib/api';
 export default function ClientDashboardContent({ data, formatDate, actionLoading, handleAccept, handlePay, setWorkViewModal }) {
   const { postedJobs, clientStats } = data;
   const [expandedJobId, setExpandedJobId] = useState(null);
-  const [hiringId, setHiringId] = useState(null);
   const toast = useToast();
-
-  const handleHire = async (jobId, freelancerId) => {
-    setHiringId(freelancerId);
-    try {
-      const { data } = await api.post(`/jobs/${jobId}/hire`, { freelancerId });
-      toast.success('Freelancer hired successfully!');
-      setTimeout(() => window.location.reload(), 1500);
-    } catch (err) {
-      console.error(err);
-      toast.error(err.response?.data?.message || 'Failed to hire freelancer.');
-    } finally {
-      setHiringId(null);
-    }
-  };
 
   return (
     <>
@@ -96,7 +81,7 @@ export default function ClientDashboardContent({ data, formatDate, actionLoading
                           </span>
                         </div>
 
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                            <button 
                              onClick={() => setWorkViewModal({ shown: true, submission: job.submission, title: job.title })}
                              className="flex flex-col items-center justify-center p-6 border-2 border-gray-200 hover:border-daInfo-blue hover:bg-daInfo-blue/5 transition-all group"
@@ -118,27 +103,14 @@ export default function ClientDashboardContent({ data, formatDate, actionLoading
                               <span className={`text-[10px] font-black uppercase tracking-widest ${
                                 job.status === 'accepted' ? 'text-blue-500' : 'text-gray-400 group-hover:text-green-500'
                               }`}>
-                                {job.status === 'accepted' ? 'COMPLETION ACCEPTED' : '2. Accept Completion'}
+                                {job.status === 'accepted' ? 'COMPLETION ACCEPTED' : '2. Accept & Release Escrow'}
                               </span>
-                           </button>
-
-                           <button 
-                             onClick={() => handlePay(job._id, job.applicants?.[0]?.id, job.title)}
-                             disabled={actionLoading || job.status !== 'accepted'}
-                             className={`flex flex-col items-center justify-center p-6 border-2 transition-all group ${
-                               job.status === 'accepted' 
-                               ? 'border-gray-200 hover:border-daInfo-pink hover:bg-pink-50 cursor-pointer' 
-                               : 'border-gray-100 bg-gray-50 opacity-50 cursor-not-allowed'
-                             }`}
-                           >
-                              <DollarSign className={`w-6 h-6 mb-2 ${job.status === 'accepted' ? 'text-gray-300 group-hover:text-daInfo-pink' : 'text-gray-300'}`} />
-                              <span className={`text-[10px] font-black uppercase tracking-widest ${job.status === 'accepted' ? 'text-gray-400 group-hover:text-daInfo-pink' : 'text-gray-400'}`}>3. Pay Freelancer</span>
                            </button>
                         </div>
 
-                        {job.status === 'accepted' && (
+                        {job.status === 'completed' && (
                           <div className="mt-6 flex items-center justify-center gap-3 py-2 bg-blue-50 text-blue-600 text-[10px] font-black uppercase tracking-widest animate-pulse">
-                             <Award className="w-4 h-4" /> Work accepted. Authorized for final payment.
+                             <Award className="w-4 h-4" /> Work accepted. Escrow funds released.
                           </div>
                         )}
 
@@ -192,12 +164,11 @@ export default function ClientDashboardContent({ data, formatDate, actionLoading
                                     <button 
                                       onClick={(e) => {
                                         e.stopPropagation();
-                                        handleHire(job._id, app.id);
+                                        handlePay(job._id, app.id, job.title);
                                       }}
-                                      disabled={hiringId === app.id}
                                       className="px-3 py-1 bg-daInfo-dark text-white text-[10px] font-black uppercase tracking-widest hover:bg-black transition-colors disabled:opacity-50"
                                     >
-                                      {hiringId === app.id ? 'HIRING...' : 'HIRE'}
+                                      HIRE & DEPOSIT
                                     </button>
                                   )}
                                 </div>

@@ -69,6 +69,10 @@ const jobSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
+  isFunded: {
+    type: Boolean,
+    default: false,
+  },
   isInstantHire: {
     type: Boolean,
     default: false,

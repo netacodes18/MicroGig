@@ -195,44 +195,7 @@ exports.deleteJob = async (req, res, next) => {
     res.json({ message: 'Job deleted' });
   } catch (err) { next(err); }
 };
-// POST /api/jobs/:id/hire
-exports.hireFreelancer = async (req, res, next) => {
-  try {
-    const { freelancerId } = req.body;
-    const job = await Job.findById(req.params.id);
-
-    if (!job) return res.status(404).json({ message: 'Job not found' });
-    
-    // Auth check: only the poster can hire
-    if (job.poster.toString() !== req.user._id.toString()) {
-      return res.status(403).json({ message: 'Not authorized to hire for this job' });
-    }
-
-    if (job.status !== 'open') {
-      return res.status(400).json({ message: 'Job is not open for hiring' });
-    }
-
-    const application = job.applicants.find(a => a.user.toString() === freelancerId);
-    if (!application) {
-      return res.status(400).json({ message: 'Freelancer has not applied to this job' });
-    }
-
-    job.assignedTo = freelancerId;
-    job.status = 'in-progress';
-    await job.save();
-
-    // Trigger Notification for Freelancer
-    await Notification.create({
-      recipient: freelancerId,
-      sender: req.user._id,
-      type: 'hire',
-      job: job._id,
-      message: `Congratulations! You have been hired for: ${job.title}`
-    });
-
-    res.json({ message: 'Freelancer hired successfully', job });
-  } catch (err) { next(err); }
-};
+// Hire functionality moved to paymentController via Escrow Deposit
 
 // POST /api/jobs/:id/submit
 exports.submitWork = async (req, res, next) => {
@@ -321,59 +284,30 @@ exports.acceptWork = async (req, res, next) => {
       return res.status(400).json({ message: 'Job is not in review status' });
     }
 
-    job.status = 'accepted';
-    await job.save();
-
-    // Notify Freelancer
-    await Notification.create({
-      recipient: job.assignedTo,
-      sender: req.user._id,
-      type: 'acceptance',
-      job: job._id,
-      message: `Your submission for "${job.title}" has been accepted! Proceeding to payment phase.`
-    });
-
-    res.json({ message: 'Work accepted', job });
-  } catch (err) { next(err); }
-};
-
-// POST /api/jobs/:id/pay
-exports.payFreelancer = async (req, res, next) => {
-  try {
-    const job = await Job.findById(req.params.id);
-
-    if (!job) return res.status(404).json({ message: 'Job not found' });
-    if (job.poster.toString() !== req.user._id.toString()) {
-      return res.status(403).json({ message: 'Not authorized' });
-    }
-
-    // Strictly require the job to be 'accepted' before allowing payment
-    if (job.status !== 'accepted') {
-      return res.status(400).json({ message: 'Job must be reviewed and accepted before payment can proceed' });
-    }
-
     job.status = 'completed';
     await job.save();
 
-    // Update Freelancer Stats
-    const User = require('../models/User'); // Ensure User model is available
-    const freelancer = await User.findById(job.assignedTo);
-    if (freelancer) {
-      freelancer.completedGigs += 1;
-      freelancer.totalEarnings += (job.budget.max || job.budget.min || 0);
-      await freelancer.save();
+    // Release Escrow: Update Freelancer Earnings
+    const User = require('../models/User');
+    if (job.assignedTo) {
+      const freelancer = await User.findById(job.assignedTo);
+      if (freelancer) {
+        freelancer.totalEarnings = (freelancer.totalEarnings || 0) + (job.budget.max || 0);
+        freelancer.completedGigs = (freelancer.completedGigs || 0) + 1;
+        await freelancer.save();
+      }
     }
 
     // Notify Freelancer
     await Notification.create({
       recipient: job.assignedTo,
       sender: req.user._id,
-      type: 'other',
+      type: 'payment',
       job: job._id,
-      message: `Payment authorized! Funds for "${job.title}" have been released to your account.`
+      message: `Your work for "${job.title}" has been accepted! The escrow funds (₹${job.budget.max || 0}) have been released to your earnings balance.`
     });
 
-    res.json({ message: 'Payment complete', job });
+    res.json({ message: 'Work accepted and escrow funds released', job });
   } catch (err) { next(err); }
 };
 

@@ -58,9 +58,14 @@ exports.login = async (req, res, next) => {
 // GET /api/auth/me
 exports.getMe = async (req, res, next) => {
   try {
-    const user = await User.findById(req.user._id);
-    res.json(user);
-  } catch (err) { next(err); }
+    let token = req.cookies?.microgig_token;
+    if (!token) return res.status(200).json(null);
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const user = await User.findById(decoded.id);
+    if (!user) return res.status(200).json(null);
+    res.status(200).json(user);
+  } catch (err) { res.status(200).json(null); }
 };
 
 const { OAuth2Client } = require('google-auth-library');

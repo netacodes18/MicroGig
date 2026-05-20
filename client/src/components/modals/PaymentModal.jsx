@@ -12,9 +12,9 @@ export default function PaymentModal({ paymentModal, setPaymentModal, actionLoad
               <DollarSign className="w-8 h-8 text-white" />
             </div>
          </div>
-         <h3 className="text-2xl font-black text-daInfo-dark uppercase tracking-tight mb-2">AUTHORIZE PAYMENT</h3>
+         <h3 className="text-2xl font-black text-daInfo-dark uppercase tracking-tight mb-2">DEPOSIT ESCROW</h3>
          <p className="text-gray-500 text-sm font-bold mb-6">
-           You are about to securely transfer funds to the freelancer for: <br/>
+           You are about to deposit funds securely into Escrow to hire the freelancer for: <br/>
            <span className="text-black font-black mt-2 inline-block">"{paymentModal.title}"</span>
          </p>
          

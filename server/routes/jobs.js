@@ -29,10 +29,8 @@ router.post('/:id/apply', protect, (req, res, next) => {
     next();
   });
 }, applyToJob);
-router.post('/:id/hire', protect, hireFreelancer);
 router.post('/:id/submit', protect, submitWork);
 router.post('/:id/accept', protect, acceptWork);
-router.post('/:id/pay', protect, payFreelancer);
 router.delete('/:id', protect, deleteJob);
 
 module.exports = router;

@@ -18,7 +18,7 @@ router.post('/login', [
 ], login);
 
 router.get('/logout', logout);
-router.get('/me', protect, getMe);
+router.get('/me', getMe);
 router.post('/google', googleLogin);
 
 module.exports = router;

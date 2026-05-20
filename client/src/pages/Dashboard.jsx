@@ -99,7 +99,7 @@ export default function Dashboard() {
       }
 
       // 2. Create Order on Backend
-      const { data: orderData } = await api.post('/payments/order', { jobId });
+      const { data: orderData } = await api.post('/payments/order', { jobId, freelancerId: paymentModal.freelancerId });
 
       // 3. Open Razorpay Checkout
       const options = {
@@ -112,12 +112,13 @@ export default function Dashboard() {
         handler: async (response) => {
           // 4. Verify Payment on Backend
           try {
-            await api.post('/payments/verify', {
-              razorpay_order_id: response.razorpay_order_id,
-              razorpay_payment_id: response.razorpay_payment_id,
-              razorpay_signature: response.razorpay_signature,
-              jobId
-            });
+              await api.post('/payments/verify', {
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature,
+                jobId,
+                freelancerId: paymentModal.freelancerId
+              });
             toast.success('Payment successful and verified!');
             setTimeout(() => window.location.reload(), 1500);
           } catch (err) {

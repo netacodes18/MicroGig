@@ -11,7 +11,7 @@ const Notification = require('../models/Notification');
 // @access  Private (Employer)
 exports.createOrder = async (req, res, next) => {
   try {
-    const { jobId } = req.body;
+    const { jobId, freelancerId } = req.body;
     const job = await Job.findById(jobId);
 
     if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
@@ -40,7 +40,7 @@ exports.createOrder = async (req, res, next) => {
       notes: {
         jobId: jobId.toString(),
         posterId: req.user._id.toString(),
-        workerId: job.assignedTo?.toString()
+        workerId: freelancerId?.toString() || job.assignedTo?.toString()
       }
     };
 
@@ -63,7 +63,8 @@ exports.verifyPayment = async (req, res, next) => {
       razorpay_order_id, 
       razorpay_payment_id, 
       razorpay_signature,
-      jobId 
+      jobId,
+      freelancerId
     } = req.body;
 
     if (!process.env.RAZORPAY_KEY_SECRET) {
@@ -81,13 +82,18 @@ exports.verifyPayment = async (req, res, next) => {
     }
 
     // -----------------------------------------------------------------
-    // PAYMENT SUCCESSFUL -> UPDATE JOB & EARNINGS
+    // PAYMENT SUCCESSFUL -> UPDATE JOB TO FUNDED & HIRE FREELANCER
     // -----------------------------------------------------------------
     const job = await Job.findById(jobId);
     if (!job) return res.status(404).json({ message: 'Job record not found after payment' });
 
-    // 1. Update Job Status
-    job.status = 'completed';
+    // 1. Update Job Status to In-Progress (Funded)
+    job.status = 'in-progress';
+    job.isFunded = true;
+    if (freelancerId) {
+      job.assignedTo = freelancerId;
+    }
+    
     job.paymentDetails = {
       orderId: razorpay_order_id,
       paymentId: razorpay_payment_id,
@@ -95,26 +101,18 @@ exports.verifyPayment = async (req, res, next) => {
     };
     await job.save();
 
-    // 2. Update Freelancer Earnings
+    // 2. Notify Freelancer
     if (job.assignedTo) {
-      const freelancer = await User.findById(job.assignedTo);
-      if (freelancer) {
-        freelancer.totalEarnings = (freelancer.totalEarnings || 0) + job.budget.max;
-        freelancer.completedGigs = (freelancer.completedGigs || 0) + 1;
-        await freelancer.save();
-
-        // 3. Notify Freelancer
-        await Notification.create({
-          recipient: job.assignedTo,
-          sender: job.poster,
-          type: 'payment',
-          job: job._id,
-          message: `Payment authorized! ₹${job.budget.max} has been added to your profile for "${job.title}".`
-        });
-      }
+      await Notification.create({
+        recipient: job.assignedTo,
+        sender: job.poster,
+        type: 'hire',
+        job: job._id,
+        message: `Congratulations! You have been hired for "${job.title}". The client has deposited ₹${job.budget.max} into Escrow.`
+      });
     }
 
-    res.json({ message: 'Payment verified and funds released successfully', jobId });
+    res.json({ message: 'Escrow funded and freelancer hired successfully', jobId });
   } catch (err) {
     next(err);
   }
