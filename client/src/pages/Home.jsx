@@ -45,14 +45,14 @@ const FreelancerAnimation = () => {
         <g opacity="0.9">
           {[0, 1, 2, 3, 4, 5].map((i) => (
             <motion.rect
-              key={`line1-${i}`} x="440" y={215 + i*14} height="6" rx="3" fill={i % 2 === 0 ? "#3498db" : "#2ecc71"}
+              key={`line1-${i}`} x="440" y={215 + i*14} width={30 + i*10} height="6" rx="3" fill={i % 2 === 0 ? "#3498db" : "#2ecc71"}
               animate={{ width: [30 + i*10, 80 - i*5, 30 + i*10] }}
               transition={{ duration: 2 + i*0.5, repeat: Infinity, ease: "easeInOut" }}
             />
           ))}
           {[0, 1, 2, 3].map((i) => (
             <motion.rect
-              key={`line2-${i}`} x="440" y={222 + i*14} height="6" rx="3" fill="#ecf0f1"
+              key={`line2-${i}`} x="440" y={222 + i*14} width={20 + i*5} height="6" rx="3" fill="#ecf0f1"
               animate={{ width: [20 + i*5, 50 + i*8, 20 + i*5] }}
               transition={{ duration: 1.5 + i*0.3, repeat: Infinity, ease: "easeInOut" }}
             />
