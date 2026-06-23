@@ -1,3 +1,5 @@
+import { Briefcase, Award, Clock, DollarSign, CheckCircle, Star, Activity, Globe, Github, Linkedin } from 'lucide-react';
+
 export default function FreelancerDashboardContent({ profile, data, formatDate, setSubmissionModal, setWorkViewModal, handleReviewClient, setWorkspaceModal }) {
   const { recruitmentHistory, earnings, rating, completedGigs } = data;
   const { skills, portfolio } = profile;
