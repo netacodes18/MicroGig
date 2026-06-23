@@ -1,193 +1,421 @@
 import { useState } from 'react';
-import { Briefcase, User, Activity, ChevronDown, ChevronUp, CheckCircle, DollarSign, Award, Globe } from 'lucide-react';
-import { useToast } from '../ui/Toast';
-import api from '../../lib/api';
+import { Briefcase, User, Activity, Clock, FileText, ExternalLink, DollarSign } from 'lucide-react';
 
-export default function ClientDashboardContent({ data, formatDate, actionLoading, handleAccept, handlePay, setWorkViewModal }) {
+export default function ClientDashboardContent({ data, formatDate, actionLoading, handleAccept, handlePay, handleReject, handleHire, setWorkViewModal, setReviewModal, setWorkspaceModal }) {
   const { postedJobs, clientStats } = data;
-  const [expandedJobId, setExpandedJobId] = useState(null);
-  const toast = useToast();
+  const [activeTab, setActiveTab] = useState('posted-jobs');
+
+  // Helper to map and sanitize jobs by status categories
+  const getJobsByStatus = (statuses) => {
+    return postedJobs?.filter(job => {
+      const statusUpper = (job.status || '').toUpperCase();
+      return statuses.includes(statusUpper);
+    }) || [];
+  };
+
+  // 1. Posted Gigs Tab (OPEN or APPLICATION_RECEIVED)
+  const postedGigs = getJobsByStatus(['OPEN', 'APPLICATION_RECEIVED']);
+
+  // 2. Applicants Tab
+  const allApplicants = [];
+  postedJobs?.forEach(job => {
+    const statusUpper = (job.status || '').toUpperCase();
+    if (statusUpper === 'OPEN' || statusUpper === 'APPLICATION_RECEIVED') {
+      job.applicants?.forEach(app => {
+        if (!app.status || app.status.toUpperCase() === 'PENDING') {
+          allApplicants.push({ job, app });
+        }
+      });
+    }
+  });
+
+  // 3. Active Projects Tab (HIRED or IN_PROGRESS or REVISION_REQUESTED)
+  const activeProjects = getJobsByStatus(['HIRED', 'IN_PROGRESS', 'REVISION_REQUESTED']);
+
+  // 4. Submitted Work Tab (WORK_SUBMITTED or UNDER_REVIEW)
+  const submittedWork = getJobsByStatus(['WORK_SUBMITTED', 'UNDER_REVIEW']);
+
+  // 5. Payments Tab (APPROVED)
+  const payments = getJobsByStatus(['APPROVED']);
+
+  // 6. Completed Projects Tab (COMPLETED)
+  const completedProjects = getJobsByStatus(['COMPLETED']);
+
+  // Tabs List
+  const tabs = [
+    { id: 'posted-jobs', label: 'Posted Gigs', count: postedGigs.length },
+    { id: 'applicants', label: 'Applicants', count: allApplicants.length },
+    { id: 'active-projects', label: 'Active Projects', count: activeProjects.length },
+    { id: 'submitted-work', label: 'Submitted Work', count: submittedWork.length },
+    { id: 'payments', label: 'Payments', count: payments.length },
+    { id: 'completed-projects', label: 'Completed', count: completedProjects.length }
+  ];
 
   return (
-    <>
-      <h2 className="text-lg font-bold text-daInfo-dark tracking-tight mb-4">EMPLOYER METRICS</h2>
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-16">
-        <div className="border border-gray-200 bg-gray-50 p-6 flex flex-col justify-between h-32 hover:border-gray-300 transition-colors">
-          <p className="text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-1">Open Openings</p>
-          <div className="flex items-end justify-between mt-auto">
-             <span className="text-3xl font-black text-daInfo-dark">{clientStats?.openOpenings || 0}</span>
-             <Briefcase className="text-gray-300 w-8 h-8" />
+    <div className="space-y-12">
+      {/* Metrics Section */}
+      <div>
+        <h2 className="text-xs font-bold text-gray-400 tracking-widest uppercase mb-6">Employer Metrics</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+          <div className="bg-gradient-to-br from-white to-gray-50/50 p-6 rounded-2xl border border-gray-100 flex flex-col justify-between h-32 shadow-sm hover:shadow-md transition-all duration-300">
+            <p className="text-[11px] font-bold uppercase tracking-widest text-gray-400 mb-1">Open Openings</p>
+            <div className="flex items-end justify-between mt-auto">
+               <span className="text-3xl font-extrabold text-daInfo-dark tracking-tight leading-none">{clientStats?.openOpenings || 0}</span>
+               <Briefcase className="text-gray-300 w-8 h-8" />
+            </div>
           </div>
-        </div>
-        <div className="border border-gray-200 bg-gray-50 p-6 flex flex-col justify-between h-32 hover:border-gray-300 transition-colors">
-          <p className="text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-1">People Hired</p>
-          <div className="flex items-end justify-between mt-auto">
-             <span className="text-3xl font-black text-daInfo-dark">{clientStats?.peopleHired || 0}</span>
-             <User className="text-gray-300 w-8 h-8" />
+          <div className="bg-gradient-to-br from-white to-gray-50/50 p-6 rounded-2xl border border-gray-100 flex flex-col justify-between h-32 shadow-sm hover:shadow-md transition-all duration-300">
+            <p className="text-[11px] font-bold uppercase tracking-widest text-gray-400 mb-1">People Hired</p>
+            <div className="flex items-end justify-between mt-auto">
+               <span className="text-3xl font-extrabold text-daInfo-dark tracking-tight leading-none">{clientStats?.peopleHired || 0}</span>
+               <User className="text-gray-300 w-8 h-8" />
+            </div>
           </div>
-        </div>
-        <div className="border border-gray-200 bg-gray-50 p-6 flex flex-col justify-between h-32 hover:border-gray-300 transition-colors">
-          <p className="text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-1">Total Postings</p>
-          <div className="flex items-end justify-between mt-auto">
-             <span className="text-3xl font-black text-daInfo-dark">{postedJobs?.length || 0}</span>
-             <Activity className="text-gray-300 w-8 h-8" />
+          <div className="bg-gradient-to-br from-white to-gray-50/50 p-6 rounded-2xl border border-gray-100 flex flex-col justify-between h-32 shadow-sm hover:shadow-md transition-all duration-300">
+            <p className="text-[11px] font-bold uppercase tracking-widest text-gray-400 mb-1">Total Postings</p>
+            <div className="flex items-end justify-between mt-auto">
+               <span className="text-3xl font-extrabold text-daInfo-dark tracking-tight leading-none">{postedJobs?.length || 0}</span>
+               <Activity className="text-gray-300 w-8 h-8" />
+            </div>
           </div>
         </div>
       </div>
 
-      <h2 className="text-lg font-bold text-daInfo-dark tracking-tight mb-4">POSTED JOBS & APPLICANTS</h2>
+      {/* Tabs Menu */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2 bg-gray-50 p-1.5 rounded-2xl border border-gray-100 w-full">
+        {tabs.map(t => (
+          <button
+            key={t.id}
+            onClick={() => setActiveTab(t.id)}
+            className={`px-4 py-2.5 rounded-xl text-xs font-bold tracking-wider transition-all duration-200 flex items-center justify-center gap-2 ${
+              activeTab === t.id 
+              ? 'bg-daInfo-dark text-white shadow-sm' 
+              : 'text-gray-600 hover:text-gray-900 hover:bg-white/50'
+            }`}
+          >
+            <span>{t.label}</span>
+            <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-md shrink-0 transition-colors ${
+              activeTab === t.id 
+              ? 'bg-white/20 text-white' 
+              : 'bg-gray-200/60 text-gray-500'
+            }`}>
+              {t.count}
+            </span>
+          </button>
+        ))}
+      </div>
+
+      {/* Tab Panels */}
       
-      {postedJobs?.length === 0 ? (
-        <div className="border border-gray-200 border-dashed p-12 text-center bg-gray-50">
-           <Briefcase className="w-8 h-8 text-gray-300 mx-auto mb-4" />
-           <h3 className="font-bold text-daInfo-dark">No jobs posted</h3>
-           <p className="text-sm text-gray-500 mt-1">When you post a new gig, it will appear here along with its applicants.</p>
-        </div>
-      ) : (
+      {/* 1. Posted Gigs */}
+      {activeTab === 'posted-jobs' && (
         <div className="space-y-4">
-          {postedJobs?.map(job => (
-            <div key={job._id} className="border border-gray-200 bg-white overflow-hidden">
-              <div 
-                className="p-5 flex items-center justify-between cursor-pointer hover:bg-gray-50 transition-colors"
-                onClick={() => setExpandedJobId(expandedJobId === job._id ? null : job._id)}
-              >
+          {postedGigs.length === 0 ? (
+            <div className="border border-gray-200 border-dashed rounded-2xl p-12 text-center bg-gray-50/30">
+               <Briefcase className="w-8 h-8 text-gray-300 mx-auto mb-4" />
+               <h3 className="font-bold text-daInfo-dark text-sm uppercase">No open job postings</h3>
+               <p className="text-xs text-gray-500 mt-1">Gigs awaiting applicants will appear here.</p>
+            </div>
+          ) : (
+            postedGigs.map(job => (
+              <div key={job._id} className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-left">
                 <div>
-                  <h4 className="font-bold text-daInfo-dark text-lg leading-tight">{job.title}</h4>
-                  <div className="flex gap-4 mt-2 text-xs font-bold uppercase tracking-widest">
-                    <span>Status: <span className={
-                      job.status === 'open' ? 'text-green-600' : 
-                      job.status === 'accepted' ? 'text-blue-600' :
-                      job.status === 'needs-review' ? 'text-daInfo-pink' :
-                      'text-gray-500'
-                    }>{job.status}</span></span>
-                    <span className="text-gray-500">Applicants: {job.applicants?.length || 0}</span>
-                    <span className="hidden sm:inline">Posted: {formatDate(job.createdAt)}</span>
+                  <h4 className="font-bold text-daInfo-dark text-lg leading-tight tracking-tight">{job.title}</h4>
+                  <div className="flex flex-wrap gap-4 mt-2.5 text-xs font-semibold tracking-wider text-gray-500">
+                    <span>Budget: <span className="text-gray-900 font-bold">₹{job.budget?.min} - ₹{job.budget?.max}</span></span>
+                    <span>Applicants: <span className="text-gray-900 font-bold">{job.applicants?.length || 0}</span></span>
+                    <span>Status: <span className="text-yellow-700 bg-yellow-50 px-2.5 py-0.5 rounded-lg border border-yellow-100 uppercase font-bold text-[10px]">{job.status}</span></span>
+                    <span>Posted: {formatDate(job.createdAt)}</span>
                   </div>
                 </div>
-                <div className="flex items-center gap-2 text-gray-400">
-                   <span className="hidden sm:inline text-xs font-bold uppercase tracking-widest">{expandedJobId === job._id ? 'CLOSE' : 'VIEW TALENT'}</span>
-                   {expandedJobId === job._id ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
-                </div>
+                <button
+                  onClick={() => setActiveTab('applicants')}
+                  className="bg-white hover:bg-gray-50 text-gray-700 border border-gray-200 text-[10px] font-bold uppercase tracking-widest px-4 py-2.5 rounded-xl transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm"
+                >
+                  VIEW APPLICANTS
+                </button>
               </div>
-              
-              {expandedJobId === job._id && (
-                 <div className="bg-gray-50 border-t border-gray-200 p-5 md:p-8 animate-scale-in">
-                   
-                   {(job.status === 'needs-review' || job.status === 'accepted') && (
-                     <>
-                     <div className="mb-10 p-8 bg-white border-2 border-black da-shadow-black">
-                          <span className={`text-[10px] font-black uppercase px-2 py-0.5 border mt-2 sm:mt-0 ${job.status === 'accepted' ? 'bg-blue-50 border-blue-200 text-blue-600' : 'bg-pink-50 border-pink-200 text-daInfo-pink'}`}>
-                            {job.status === 'accepted' ? 'READY FOR PAYMENT' : 'PENDING REVIEW'}
-                          </span>
-                        </div>
-
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                           <button 
-                             onClick={() => setWorkViewModal({ shown: true, submission: job.submission, title: job.title })}
-                             className="flex flex-col items-center justify-center p-6 border-2 border-gray-200 hover:border-daInfo-blue hover:bg-daInfo-blue/5 transition-all group"
-                           >
-                              <Activity className="w-6 h-6 text-gray-300 group-hover:text-daInfo-blue mb-2" />
-                              <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 group-hover:text-daInfo-blue">1. Review Work</span>
-                           </button>
-
-                           <button 
-                             onClick={() => handleAccept(job._id)}
-                             disabled={actionLoading || job.status === 'accepted'}
-                             className={`flex flex-col items-center justify-center p-6 border-2 transition-all group ${
-                               job.status === 'accepted' 
-                               ? 'bg-blue-50 border-blue-200 cursor-default' 
-                               : 'border-gray-200 hover:border-green-500 hover:bg-green-50'
-                             }`}
-                           >
-                              <CheckCircle className={`w-6 h-6 mb-2 ${job.status === 'accepted' ? 'text-blue-500' : 'text-gray-300 group-hover:text-green-500'}`} />
-                              <span className={`text-[10px] font-black uppercase tracking-widest ${
-                                job.status === 'accepted' ? 'text-blue-500' : 'text-gray-400 group-hover:text-green-500'
-                              }`}>
-                                {job.status === 'accepted' ? 'COMPLETION ACCEPTED' : '2. Accept & Release Escrow'}
-                              </span>
-                           </button>
-                        </div>
-
-                        {job.status === 'completed' && (
-                          <div className="mt-6 flex items-center justify-center gap-3 py-2 bg-blue-50 text-blue-600 text-[10px] font-black uppercase tracking-widest animate-pulse">
-                             <Award className="w-4 h-4" /> Work accepted. Escrow funds released.
-                          </div>
-                        )}
-
-                        {job.status === 'needs-review' && (
-                          <div className="mt-8 border-t border-gray-100 pt-8 text-center">
-                             <p className="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center justify-center gap-2">
-                               <Activity className="w-4 h-4" /> Please review the submission before proceeding
-                             </p>
-                          </div>
-                        )}
-                      </>
-                    )}
-
-                   <h5 className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-4 border-b border-gray-200 pb-2">Talent Applications</h5>
-                  
-                  {job.applicants?.length > 0 ? (
-                    <div className="grid lg:grid-cols-2 gap-4">
-                      {job.applicants.map((app, idx) => (
-                        <div key={idx} className="border border-gray-200 bg-white p-5 flex gap-4 hover:border-gray-300 transition-colors">
-                           <img src={app.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${app.name}`} className="w-12 h-12 border border-gray-200 object-cover bg-gray-50 shrink-0" alt="" />
-                           <div className="flex-1 min-w-0">
-                             <div className="flex items-center justify-between gap-2 mb-1">
-                               <h6 className="font-bold text-daInfo-dark truncate">{app.name}</h6>
-                               <span className="text-[10px] font-bold uppercase bg-yellow-50 text-yellow-700 px-1.5 py-0.5 border border-yellow-200 shrink-0">★ {app.rating || 'N/A'}</span>
-                             </div>
-                             <p className="text-xs text-daInfo-dark font-bold mt-2">Exp: {app.experience || "Not specified"}</p>
-                             <p className="text-xs text-gray-500 mt-1 mb-3 italic">"{app.message || "No cover letter provided."}"</p>
-                             {app.contactInfo && (
-                               <p className="text-[10px] font-black text-daInfo-blue mb-4 flex items-center gap-1">
-                                 <Globe className="w-3 h-3" /> {app.contactInfo}
-                               </p>
-                             )}
-                              <div className="flex flex-wrap items-center justify-between gap-2 mt-auto">
-                                <div className="flex flex-wrap gap-1">
-                                  {app.skills?.slice(0, 3).map(s => <span key={s} className="px-1.5 py-0.5 bg-gray-100 text-gray-500 text-[9px] uppercase font-bold tracking-widest">{s}</span>)}
-                                </div>
-                                <div className="flex gap-2">
-                                  {app.attachmentUrl && (
-                                    <a 
-                                      href={app.attachmentUrl.includes('cloudinary.com') ? app.attachmentUrl.replace('/upload/', '/upload/fl_attachment/') : app.attachmentUrl}
-                                      download={app.attachmentName || 'resume.pdf'}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="px-3 py-1 border border-daInfo-dark text-daInfo-dark text-[10px] font-black uppercase tracking-widest hover:bg-gray-50 transition-colors flex items-center gap-1"
-                                      title={app.attachmentName}
-                                    >
-                                      VIEW PDF
-                                    </a>
-                                  )}
-                                  {job.status === 'open' && (
-                                    <button 
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handlePay(job._id, app.id, job.title);
-                                      }}
-                                      className="px-3 py-1 bg-daInfo-dark text-white text-[10px] font-black uppercase tracking-widest hover:bg-black transition-colors disabled:opacity-50"
-                                    >
-                                      HIRE & DEPOSIT
-                                    </button>
-                                  )}
-                                </div>
-                              </div>
-                           </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="text-center py-8">
-                       <p className="text-sm font-medium text-gray-500">No applicants yet for this gig.</p>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          ))}
+            ))
+          )}
         </div>
       )}
-    </>
+
+      {/* 2. Applicants */}
+      {activeTab === 'applicants' && (
+        <div className="space-y-4">
+          {allApplicants.length === 0 ? (
+            <div className="border border-gray-200 border-dashed rounded-2xl p-12 text-center bg-gray-50/30">
+               <User className="w-8 h-8 text-gray-300 mx-auto mb-4" />
+               <h3 className="font-bold text-daInfo-dark text-sm uppercase">No active candidates</h3>
+               <p className="text-xs text-gray-500 mt-1">Freelancers applying to your open gigs will be listed here.</p>
+            </div>
+          ) : (
+            <div className="grid md:grid-cols-2 gap-6 text-left">
+              {allApplicants.map(({ job, app }, idx) => (
+                <div key={idx} className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col justify-between gap-6">
+                  
+                  {/* Candidate Profile Header */}
+                  <div>
+                    <div className="flex items-start gap-4 mb-4">
+                      <img 
+                        src={app.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${app.name}`} 
+                        className="w-12 h-12 rounded-xl border border-gray-100 object-cover bg-gray-50" 
+                        alt="" 
+                      />
+                      <div className="min-w-0 flex-1">
+                        <h4 className="font-bold text-daInfo-dark leading-none mb-1 text-base">{app.name}</h4>
+                        <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest truncate">
+                          Applied: {job.title}
+                        </p>
+                        <div className="flex gap-2 mt-2">
+                           <span className="text-[9px] font-bold uppercase bg-amber-50 text-amber-700 px-2 py-0.5 rounded-lg border border-amber-100">
+                             ★ {app.rating || 'N/A'}
+                           </span>
+                           {app.vibeMatch > 0 && (
+                             <span className="text-[9px] font-bold uppercase bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-lg border border-indigo-100">
+                               AI Match: {app.vibeMatch}%
+                             </span>
+                           )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Proposal Details */}
+                    <div className="space-y-3 border-t border-gray-100 pt-4">
+                       <div className="bg-slate-50/50 p-4 rounded-xl border border-slate-100 text-xs text-daInfo-dark">
+                         <strong className="block mb-1 text-gray-400 uppercase tracking-wider text-[9px] font-bold">Proposal Pitch</strong>
+                         <p className="italic font-medium leading-relaxed">"{app.message || 'No cover letter provided.'}"</p>
+                       </div>
+                       <p className="text-xs font-medium text-daInfo-dark">
+                         <strong>Experience:</strong> {app.experience || 'No experience details specified.'}
+                       </p>
+                       <p className="text-xs font-medium text-daInfo-dark">
+                         <strong>Contact:</strong> {app.contactInfo || 'No direct contact specified.'}
+                       </p>
+                       {app.portfolioUrl && (
+                         <p className="text-xs font-medium text-daInfo-blue flex items-center gap-1">
+                           <strong>Portfolio:</strong> 
+                           <a href={app.portfolioUrl} target="_blank" rel="noopener noreferrer" className="hover:underline inline-flex items-center gap-0.5 font-bold uppercase text-[9px]">
+                              {app.portfolioUrl} <ExternalLink className="w-2.5 h-2.5" />
+                           </a>
+                         </p>
+                       )}
+                    </div>
+                  </div>
+
+                  {/* Skills & Bid details */}
+                  <div>
+                    <div className="flex flex-wrap gap-1 mb-4">
+                      {app.skills?.slice(0, 4).map(s => (
+                        <span key={s} className="px-2.5 py-1 bg-gray-50 rounded-lg border border-gray-100 text-[9px] uppercase font-bold tracking-widest text-gray-500">
+                          {s}
+                        </span>
+                      ))}
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4 border border-gray-100 rounded-xl p-4 bg-gray-50/30 mb-4 text-xs font-bold uppercase tracking-wider text-daInfo-dark">
+                      <div>Bid: <span className="font-extrabold text-gray-900">₹{app.bidAmount || job.budget?.max}</span></div>
+                      <div>Delivery: <span className="font-extrabold text-gray-900">{app.deliveryTime || job.duration}</span></div>
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div className="flex gap-3">
+                       <button
+                         onClick={() => handleHire(job._id, app.id)}
+                         disabled={actionLoading}
+                         className="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white shadow-sm hover:shadow-md text-xs font-bold uppercase tracking-widest py-3 px-6 rounded-xl transition-all duration-200 hover:-translate-y-0.5 flex-1 justify-center text-center disabled:opacity-50"
+                       >
+                         HIRE
+                       </button>
+                       <button
+                         onClick={() => {
+                           if (window.confirm(`Are you sure you want to reject ${app.name}?`)) {
+                             handleReject(job._id, app.id);
+                           }
+                         }}
+                         disabled={actionLoading}
+                         className="bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-100 text-xs font-bold uppercase tracking-widest py-3 px-6 rounded-xl transition-all duration-200 hover:-translate-y-0.5 flex-1 justify-center text-center disabled:opacity-50"
+                       >
+                         REJECT
+                       </button>
+                    </div>
+                  </div>
+
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* 3. Active Projects */}
+      {activeTab === 'active-projects' && (
+        <div className="space-y-4">
+          {activeProjects.length === 0 ? (
+            <div className="border border-gray-200 border-dashed rounded-2xl p-12 text-center bg-gray-50/30">
+               <Clock className="w-8 h-8 text-gray-300 mx-auto mb-4" />
+               <h3 className="font-bold text-daInfo-dark text-sm uppercase">No active projects</h3>
+               <p className="text-xs text-gray-500 mt-1">Once you hire a freelancer, the project workspace will display here.</p>
+            </div>
+          ) : (
+            activeProjects.map(job => (
+              <div key={job._id} className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col sm:flex-row sm:items-center justify-between gap-6 text-left">
+                <div>
+                  <div className="flex items-center gap-3 mb-2">
+                     <h4 className="font-bold text-daInfo-dark text-lg leading-none">{job.title}</h4>
+                     <span className="text-[10px] font-bold uppercase px-2.5 py-1 rounded-lg border border-yellow-100 bg-yellow-50 text-yellow-750">
+                       {job.status}
+                     </span>
+                  </div>
+                  <div className="flex flex-wrap gap-4 text-xs font-semibold tracking-wider text-gray-500">
+                    <span>Budget: <span className="text-gray-900 font-bold">₹{job.budget?.max}</span></span>
+                    <span>Assigned Freelancer: <span className="text-gray-900 font-bold">{job.assignedTo?.name || 'Assigned'}</span></span>
+                    <span>Last Updated: {formatDate(job.updatedAt)}</span>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setWorkspaceModal({ shown: true, jobId: job._id })}
+                  className="bg-daInfo-dark hover:bg-black text-white text-xs font-bold uppercase tracking-widest px-6 py-3.5 rounded-xl transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg shadow-daInfo-dark/15 flex items-center justify-center gap-2"
+                >
+                  OPEN WORKSPACE
+                </button>
+              </div>
+            ))
+          )}
+        </div>
+      )}
+
+      {/* 4. Submitted Work */}
+      {activeTab === 'submitted-work' && (
+        <div className="space-y-4">
+          {submittedWork.length === 0 ? (
+            <div className="border border-gray-200 border-dashed rounded-2xl p-12 text-center bg-gray-50/30">
+               <FileText className="w-8 h-8 text-gray-300 mx-auto mb-4" />
+               <h3 className="font-bold text-daInfo-dark text-sm uppercase">No submissions to review</h3>
+               <p className="text-xs text-gray-500 mt-1">Freelancer deliverables awaiting your audit will appear here.</p>
+            </div>
+          ) : (
+            submittedWork.map(job => (
+              <div key={job._id} className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col sm:flex-row sm:items-center justify-between gap-6 text-left">
+                <div>
+                  <div className="flex items-center gap-3 mb-2">
+                     <h4 className="font-bold text-daInfo-dark text-lg leading-none">{job.title}</h4>
+                     <span className="text-[10px] font-bold uppercase px-2.5 py-1 rounded-lg border border-indigo-100 bg-indigo-50 text-indigo-750 animate-pulse">
+                       AWAITING AUDIT
+                     </span>
+                  </div>
+                  <div className="flex flex-wrap gap-4 text-xs font-semibold tracking-wider text-gray-500">
+                    <span>Submitted: <span className="text-gray-900 font-bold">{formatDate(job.submission?.submittedAt)}</span></span>
+                    <span>Freelancer: <span className="text-gray-900 font-bold">{job.assignedTo?.name}</span></span>
+                    {job.submission?.aiVerificationScore !== null && (
+                      <span className="text-purple-700 font-bold bg-purple-50 px-2 py-0.5 border border-purple-150 rounded text-[10px]">AI Audit: {job.submission?.aiVerificationScore}%</span>
+                    )}
+                  </div>
+                </div>
+                <button
+                  onClick={() => setWorkspaceModal({ shown: true, jobId: job._id })}
+                  className="bg-daInfo-dark hover:bg-black text-white text-xs font-bold uppercase tracking-widest px-6 py-3.5 rounded-xl transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg shadow-daInfo-dark/15 flex items-center justify-center gap-2"
+                >
+                  REVIEW WORK & CHAT
+                </button>
+              </div>
+            ))
+          )}
+        </div>
+      )}
+
+      {/* 5. Payments */}
+      {activeTab === 'payments' && (
+        <div className="space-y-4">
+          {payments.length === 0 ? (
+            <div className="border border-gray-200 border-dashed rounded-2xl p-12 text-center bg-gray-50/30">
+               <DollarSign className="w-8 h-8 text-gray-300 mx-auto mb-4" />
+               <h3 className="font-bold text-daInfo-dark text-sm uppercase">No pending releases</h3>
+               <p className="text-xs text-gray-500 mt-1">Once you approve deliverables, payments will be ready to release here.</p>
+            </div>
+          ) : (
+            payments.map(job => (
+              <div key={job._id} className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col sm:flex-row sm:items-center justify-between gap-6 text-left">
+                <div>
+                  <div className="flex items-center gap-3 mb-2">
+                     <h4 className="font-bold text-daInfo-dark text-lg leading-none">{job.title}</h4>
+                     <span className="text-[10px] font-bold uppercase px-2.5 py-1 rounded-lg border border-emerald-100 bg-emerald-50 text-emerald-700">
+                       APPROVED
+                     </span>
+                  </div>
+                  <div className="flex flex-wrap gap-4 text-xs font-semibold tracking-wider text-gray-500">
+                    <span>Freelancer: <span className="text-gray-900 font-bold">{job.assignedTo?.name}</span></span>
+                    <span>Ready for release: <span className="text-emerald-600 font-bold">₹{job.budget?.max}</span></span>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setWorkspaceModal({ shown: true, jobId: job._id })}
+                  className="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white shadow-sm hover:shadow-md text-xs font-bold uppercase tracking-widest px-6 py-3.5 rounded-xl transition-all duration-200 hover:-translate-y-0.5 flex items-center justify-center gap-2 animate-pulse"
+                >
+                  RELEASE ESCROW PAYMENT
+                </button>
+              </div>
+            ))
+          )}
+        </div>
+      )}
+
+      {/* 6. Completed Projects */}
+      {activeTab === 'completed-projects' && (
+        <div className="space-y-4">
+          {completedProjects.length === 0 ? (
+            <div className="border border-gray-200 border-dashed rounded-2xl p-12 text-center bg-gray-50/30">
+               <Activity className="w-8 h-8 text-gray-300 mx-auto mb-4" />
+               <h3 className="font-bold text-daInfo-dark text-sm uppercase">No completed gigs</h3>
+               <p className="text-xs text-gray-500 mt-1">Finished and paid projects will be listed here.</p>
+            </div>
+          ) : (
+            completedProjects.map(job => (
+              <div key={job._id} className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col sm:flex-row sm:items-center justify-between gap-6 text-left">
+                <div>
+                  <div className="flex items-center gap-3 mb-2">
+                     <h4 className="font-bold text-daInfo-dark text-lg leading-none">{job.title}</h4>
+                     <span className="text-[10px] font-bold uppercase px-2.5 py-1 rounded-lg border border-gray-200 bg-gray-100 text-gray-600">
+                       COMPLETED
+                     </span>
+                  </div>
+                  <div className="flex flex-wrap gap-4 text-xs font-semibold tracking-wider text-gray-500">
+                    <span>Paid Freelancer: <span className="text-gray-900 font-bold">{job.assignedTo?.name}</span></span>
+                    <span>Amount Transferred: <span className="text-gray-900 font-bold">₹{job.budget?.max}</span></span>
+                    <span>Paid Date: {formatDate(job.paymentDetails?.paidAt || job.updatedAt)}</span>
+                  </div>
+                  {job.paymentDetails?.paymentId && (
+                    <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider mt-2">
+                       Receipt Payment ID: {job.paymentDetails.paymentId} (Order ID: {job.paymentDetails.orderId})
+                    </p>
+                  )}
+                </div>
+                <div className="flex gap-2">
+                   <button
+                     onClick={() => setWorkspaceModal({ shown: true, jobId: job._id })}
+                     className="bg-white hover:bg-gray-50 text-gray-700 border border-gray-200 text-xs font-bold uppercase tracking-widest px-4 py-2.5 rounded-xl transition-all duration-200 hover:-translate-y-0.5 flex items-center justify-center gap-2"
+                   >
+                     VIEW LOGS
+                   </button>
+                   <button
+                     onClick={() => setReviewModal({ 
+                       shown: true, 
+                       jobId: job._id, 
+                       revieweeId: job.assignedTo?._id || job.assignedTo, 
+                       rating: 5, 
+                       comment: '', 
+                       title: `Review Freelancer for: ${job.title}` 
+                     })}
+                     className="bg-daInfo-dark hover:bg-black text-white text-xs font-bold uppercase tracking-widest px-4 py-2.5 rounded-xl transition-all duration-200 hover:-translate-y-0.5 flex items-center justify-center gap-2"
+                   >
+                     RATE FREELANCER
+                   </button>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      )}
+    </div>
   );
 }

@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { 
-  Briefcase, Activity, CheckCircle, Target, 
-  Settings as SettingsIcon, Award, Calendar
+  Briefcase, Activity, CheckCircle, 
+  Settings as SettingsIcon, Calendar,
+  Github, Linkedin, Globe
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../components/ui/Toast';
-import GuildLeaderboard from '../components/dashboard/GuildLeaderboard';
 import api from '../lib/api';
 
 import ClientDashboardContent from '../components/dashboard/ClientDashboardContent';
@@ -15,6 +15,7 @@ import SubmissionModal from '../components/modals/SubmissionModal';
 import ReviewModal from '../components/modals/ReviewModal';
 import WorkViewModal from '../components/modals/WorkViewModal';
 import PaymentModal from '../components/modals/PaymentModal';
+import WorkspaceModal from '../components/modals/WorkspaceModal';
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -26,6 +27,7 @@ export default function Dashboard() {
   const [reviewModal, setReviewModal] = useState({ shown: false, jobId: null, revieweeId: null, rating: 5, comment: '', title: '' });
   const [workViewModal, setWorkViewModal] = useState({ shown: false, submission: null, title: '' });
   const [paymentModal, setPaymentModal] = useState({ shown: false, jobId: null, freelancerId: null, title: '' });
+  const [workspaceModal, setWorkspaceModal] = useState({ shown: false, jobId: null });
   const [actionLoading, setActionLoading] = useState(false);
 
   // Load Razorpay Script
@@ -84,6 +86,33 @@ export default function Dashboard() {
 
   const handlePay = (jobId, freelancerId, title) => {
     setPaymentModal({ shown: true, jobId, freelancerId, title });
+  };
+
+  const handleHire = async (jobId, freelancerId) => {
+    setActionLoading(true);
+    try {
+      await api.post(`/jobs/${jobId}/hire`, { freelancerId });
+      toast.success('Freelancer hired successfully!');
+      window.location.reload();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to hire freelancer.');
+      console.error(err);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleReject = async (jobId, freelancerId) => {
+    setActionLoading(true);
+    try {
+      await api.post(`/jobs/${jobId}/reject`, { applicantId: freelancerId });
+      toast.success('Applicant rejected.');
+      window.location.reload();
+    } catch (err) { 
+      toast.error(err.response?.data?.message || 'Failed to reject applicant.');
+      console.error(err); 
+    }
+    finally { setActionLoading(false); }
   };
 
   const executePayment = async () => {
@@ -207,9 +236,12 @@ export default function Dashboard() {
     setSubmissionModal,
     handleAccept,
     handlePay,
+    handleReject,
+    handleHire,
     setReviewModal,
     setWorkViewModal,
-    handleReviewClient
+    handleReviewClient,
+    setWorkspaceModal
   };
 
   return (
@@ -228,6 +260,48 @@ export default function Dashboard() {
                     {profile.dob && <span className="flex items-center gap-1"><Calendar className="w-3 h-3" /> DOB: {formatDate(profile.dob)}</span>}
                     <span className="flex items-center gap-1"><Briefcase className="w-3 h-3" /> Member since {new Date(profile.createdAt).getFullYear()}</span>
                   </div>
+                  {profile.bio && (
+                    <p className="text-sm text-gray-500 mt-3 max-w-xl font-medium leading-relaxed italic">
+                      "{profile.bio}"
+                    </p>
+                  )}
+                  {profile.portfolio && (profile.portfolio.github || profile.portfolio.linkedin || profile.portfolio.website) && (
+                    <div className="flex items-center justify-center sm:justify-start gap-3 mt-4">
+                       {profile.portfolio.github && (
+                         <a 
+                           href={profile.portfolio.github.startsWith('http') ? profile.portfolio.github : `https://${profile.portfolio.github}`} 
+                           target="_blank" 
+                           rel="noopener noreferrer"
+                           className="p-2 bg-gray-50 border border-gray-200 text-gray-400 hover:text-daInfo-dark hover:border-daInfo-dark hover:bg-gray-100 rounded-xl transition-all duration-200"
+                           title="GitHub Profile"
+                         >
+                            <Github className="w-4 h-4" />
+                         </a>
+                       )}
+                       {profile.portfolio.linkedin && (
+                         <a 
+                           href={profile.portfolio.linkedin.startsWith('http') ? profile.portfolio.linkedin : `https://${profile.portfolio.linkedin}`} 
+                           target="_blank" 
+                           rel="noopener noreferrer"
+                           className="p-2 bg-gray-50 border border-gray-200 text-gray-400 hover:text-daInfo-dark hover:border-daInfo-dark hover:bg-gray-100 rounded-xl transition-all duration-200"
+                           title="LinkedIn Profile"
+                         >
+                            <Linkedin className="w-4 h-4" />
+                         </a>
+                       )}
+                       {profile.portfolio.website && (
+                         <a 
+                           href={profile.portfolio.website.startsWith('http') ? profile.portfolio.website : `https://${profile.portfolio.website}`} 
+                           target="_blank" 
+                           rel="noopener noreferrer"
+                           className="p-2 bg-gray-50 border border-gray-200 text-gray-400 hover:text-daInfo-dark hover:border-daInfo-dark hover:bg-gray-100 rounded-xl transition-all duration-200"
+                           title="Portfolio Website"
+                         >
+                            <Globe className="w-4 h-4" />
+                         </a>
+                       )}
+                    </div>
+                  )}
                </div>
             </div>
             
@@ -246,42 +320,14 @@ export default function Dashboard() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
-          <div className="lg:col-span-2">
-            {isClient ? (
-              <ClientDashboardContent {...dashboardProps} />
-            ) : (
-              <FreelancerDashboardContent 
-                profile={profile} 
-                {...dashboardProps} 
-              />
-            )}
-          </div>
-          
-          <aside className="space-y-12">
-            <GuildLeaderboard />
-            
-            {/* TRIBAL STATUS CARD */}
-            <div className="border-4 border-black p-8 bg-daInfo-dark text-white da-shadow-black relative overflow-hidden group">
-               <div className="absolute -right-4 -bottom-4 opacity-10 group-hover:scale-110 transition-transform duration-500">
-                  <Target className="w-32 h-32" />
-               </div>
-               <h3 className="text-xs font-black uppercase tracking-[0.3em] mb-6">Your_Tribal_Rank</h3>
-               <div className="space-y-4 relative z-10">
-                  <div className="flex justify-between items-end">
-                     <span className="text-4xl font-black tracking-tighter">#{profile.completedGigs > 10 ? 'TOP_TIER' : 'RECRUIT'}</span>
-                     <Award className="w-8 h-8 text-yellow-400" />
-                  </div>
-                  <div className="h-2 bg-white/20 border border-white/10">
-                     <div className="h-full bg-yellow-400" style={{ width: `${Math.min((profile.completedGigs || 0) * 10, 100)}%` }} />
-                  </div>
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-white/60">
-                     {profile.guild ? `PROUD_MEMBER_OF: ${profile.guild}` : 'NO_GUILD_DETECTED. JOIN_IN_SETTINGS.'}
-                  </p>
-               </div>
-            </div>
-          </aside>
-        </div>
+        {isClient ? (
+          <ClientDashboardContent {...dashboardProps} />
+        ) : (
+          <FreelancerDashboardContent 
+            profile={profile} 
+            {...dashboardProps} 
+          />
+        )}
       </div>
 
       <SubmissionModal 
@@ -308,6 +354,15 @@ export default function Dashboard() {
         actionLoading={actionLoading} 
         executePayment={executePayment} 
       />
+      {workspaceModal.shown && (
+        <WorkspaceModal 
+          jobId={workspaceModal.jobId}
+          userRole={user.role}
+          onClose={() => setWorkspaceModal({ shown: false, jobId: null })}
+          onRefresh={() => window.location.reload()}
+          handlePay={handlePay}
+        />
+      )}
     </div>
   );
 }

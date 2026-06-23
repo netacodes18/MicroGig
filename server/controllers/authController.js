@@ -28,6 +28,7 @@ exports.register = async (req, res, next) => {
     });
 
     res.status(201).json({
+      token,
       user: { _id: user._id, name: user.name, email: user.email, role: user.role, avatar: user.avatar, skills: user.skills },
     });
   } catch (err) { next(err); }
@@ -50,6 +51,7 @@ exports.login = async (req, res, next) => {
     });
 
     res.json({
+      token,
       user: { _id: user._id, name: user.name, email: user.email, role: user.role, avatar: user.avatar, skills: user.skills, rating: user.rating, completedGigs: user.completedGigs, totalEarnings: user.totalEarnings },
     });
   } catch (err) { next(err); }
@@ -58,8 +60,16 @@ exports.login = async (req, res, next) => {
 // GET /api/auth/me
 exports.getMe = async (req, res, next) => {
   try {
-    let token = req.cookies?.microgig_token;
-    if (!token) return res.status(200).json(null);
+    let token;
+    if (req.cookies && req.cookies.microgig_token) {
+      token = req.cookies.microgig_token;
+    } else if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+      token = req.headers.authorization.split(' ')[1];
+    }
+
+    if (!token || token === 'null' || token === 'undefined') {
+      return res.status(200).json(null);
+    }
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const user = await User.findById(decoded.id);
@@ -116,6 +126,7 @@ exports.googleLogin = async (req, res, next) => {
     });
 
     res.status(200).json({
+      token: jwtToken,
       user: { _id: user._id, name: user.name, email: user.email, role: user.role, avatar: user.avatar, skills: user.skills, rating: user.rating, completedGigs: user.completedGigs, totalEarnings: user.totalEarnings },
     });
 

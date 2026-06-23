@@ -108,6 +108,7 @@ exports.getDashboard = async (req, res, next) => {
           status: job.status,
           createdAt: job.createdAt,
           budget: job.budget,
+          assignedTo: job.assignedTo,
           applicants: job.applicants.map(a => ({
             id: a.user?._id,
             name: a.user?.name,
@@ -119,7 +120,8 @@ exports.getDashboard = async (req, res, next) => {
             contactInfo: a.contactInfo,
             attachmentUrl: a.attachmentUrl,
             attachmentName: a.attachmentName,
-            appliedAt: a.appliedAt
+            appliedAt: a.appliedAt,
+            vibeMatch: a.vibeMatch
           }))
         });
       });

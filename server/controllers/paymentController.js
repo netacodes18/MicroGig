@@ -30,8 +30,11 @@ exports.createOrder = async (req, res, next) => {
       return res.status(403).json({ message: 'Not authorized to pay for this job' });
     }
 
-    // Amount in Razorpay is in smallest currency unit (paise for INR)
-    // We'll use job.budget.max for simplicity
+    // Work must be APPROVED and paymentStatus READY_FOR_RELEASE
+    if (job.status !== 'APPROVED' || job.paymentStatus !== 'READY_FOR_RELEASE') {
+      return res.status(400).json({ message: 'Job is not approved and ready for payment release yet' });
+    }
+
     const amount = job.budget.max * 100; 
     const options = {
       amount,
@@ -82,37 +85,54 @@ exports.verifyPayment = async (req, res, next) => {
     }
 
     // -----------------------------------------------------------------
-    // PAYMENT SUCCESSFUL -> UPDATE JOB TO FUNDED & HIRE FREELANCER
+    // PAYMENT SUCCESSFUL -> RELEASE PAYMENT & COMPLETE PROJECT
     // -----------------------------------------------------------------
     const job = await Job.findById(jobId);
     if (!job) return res.status(404).json({ message: 'Job record not found after payment' });
 
-    // 1. Update Job Status to In-Progress (Funded)
-    job.status = 'in-progress';
+    // Update Job Status to COMPLETED & Payment released
+    job.status = 'COMPLETED';
+    job.paymentStatus = 'RELEASED';
     job.isFunded = true;
-    if (freelancerId) {
-      job.assignedTo = freelancerId;
-    }
     
     job.paymentDetails = {
       orderId: razorpay_order_id,
       paymentId: razorpay_payment_id,
       paidAt: new Date()
     };
+
+    // Log payment in workspace
+    job.workspace.push({
+      sender: req.user._id,
+      text: `[PAYMENT RELEASED] Payment of ₹${job.budget.max} successfully released. Project marked COMPLETED.`,
+      createdAt: new Date()
+    });
+
     await job.save();
 
-    // 2. Notify Freelancer
-    if (job.assignedTo) {
+    // Update Freelancer earnings
+    const targetFreelancerId = freelancerId || job.assignedTo;
+    if (targetFreelancerId) {
+      const freelancer = await User.findById(targetFreelancerId);
+      if (freelancer) {
+        freelancer.totalEarnings = (freelancer.totalEarnings || 0) + (job.budget.max || 0);
+        freelancer.completedGigs = (freelancer.completedGigs || 0) + 1;
+        await freelancer.save();
+      }
+    }
+
+    // Notify Freelancer
+    if (targetFreelancerId) {
       await Notification.create({
-        recipient: job.assignedTo,
+        recipient: targetFreelancerId,
         sender: job.poster,
-        type: 'hire',
+        type: 'payment',
         job: job._id,
-        message: `Congratulations! You have been hired for "${job.title}". The client has deposited ₹${job.budget.max} into Escrow.`
+        message: `Congratulations! Payment of ₹${job.budget.max} has been released for "${job.title}".`
       });
     }
 
-    res.json({ message: 'Escrow funded and freelancer hired successfully', jobId });
+    res.json({ message: 'Payment released and project marked completed successfully', jobId });
   } catch (err) {
     next(err);
   }

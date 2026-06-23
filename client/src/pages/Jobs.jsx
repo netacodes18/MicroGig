@@ -20,7 +20,7 @@ export default function Jobs() {
   const [maxBudget, setMaxBudget] = useState('');
   const [selectedDuration, setSelectedDuration] = useState('');
   const [selectedJob, setSelectedJob] = useState(null);
-  const [applyModal, setApplyModal] = useState({ shown: false, message: '', experience: '', contactInfo: '', attachment: null });
+  const [applyModal, setApplyModal] = useState({ shown: false, message: '', experience: '', contactInfo: '', bidAmount: '', deliveryTime: '', portfolioUrl: '', attachment: null });
   const [applyLoading, setApplyLoading] = useState(false);
   const [applyStatus, setApplyStatus] = useState(null);
   
@@ -258,8 +258,13 @@ export default function Jobs() {
                        <button 
                          onClick={(e) => {
                            e.stopPropagation();
+                           if (!authUser) {
+                             toast.error('You must be logged in as a freelancer to apply.');
+                             navigate('/login');
+                             return;
+                           }
                            setSelectedJob(job);
-                           setApplyModal({ shown: true, message: '', experience: '', contactInfo: '' });
+                           setApplyModal({ shown: true, message: '', experience: '', contactInfo: '', bidAmount: '', deliveryTime: '', portfolioUrl: '', attachment: null });
                          }}
                          className="px-4 py-2 bg-daInfo-dark text-white text-[10px] font-black uppercase tracking-[0.2em] da-shadow-black hover:bg-black transition-all"
                        >
@@ -416,7 +421,14 @@ export default function Jobs() {
                           </button>
                        ) : (
                           <button 
-                            onClick={() => setApplyModal({ shown: true, message: '' })}
+                            onClick={() => {
+                              if (!authUser) {
+                                toast.error('You must be logged in as a freelancer to apply.');
+                                navigate('/login');
+                                return;
+                              }
+                               setApplyModal({ shown: true, message: '', experience: '', contactInfo: '', bidAmount: '', deliveryTime: '', portfolioUrl: '', attachment: null });
+                            }}
                             className="w-full relative inline-flex items-center justify-center gap-3 px-6 py-5 text-sm font-bold text-white uppercase tracking-widest bg-daInfo-dark hover:bg-black transition-all group shadow-sm"
                           >
                              APPLY TO GIG
@@ -473,6 +485,41 @@ export default function Jobs() {
                       className="w-full p-4 border-2 border-gray-200 focus:border-daInfo-dark outline-none text-daInfo-dark font-medium"
                     />
                   </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-xs font-black uppercase tracking-widest text-daInfo-dark block mb-2">Bid Amount (₹)</label>
+                      <input 
+                        type="number"
+                        value={applyModal.bidAmount}
+                        onChange={(e) => setApplyModal(prev => ({ ...prev, bidAmount: e.target.value }))}
+                        placeholder="e.g. 5000"
+                        className="w-full p-4 border-2 border-gray-200 focus:border-daInfo-dark outline-none text-daInfo-dark font-medium"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs font-black uppercase tracking-widest text-daInfo-dark block mb-2">Estimated Delivery Time</label>
+                      <input 
+                        type="text"
+                        value={applyModal.deliveryTime}
+                        onChange={(e) => setApplyModal(prev => ({ ...prev, deliveryTime: e.target.value }))}
+                        placeholder="e.g. 3 days"
+                        className="w-full p-4 border-2 border-gray-200 focus:border-daInfo-dark outline-none text-daInfo-dark font-medium"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-black uppercase tracking-widest text-daInfo-dark block mb-2">Portfolio Links (if available)</label>
+                    <input 
+                      type="text"
+                      value={applyModal.portfolioUrl}
+                      onChange={(e) => setApplyModal(prev => ({ ...prev, portfolioUrl: e.target.value }))}
+                      placeholder="e.g. https://myportfolio.com"
+                      className="w-full p-4 border-2 border-gray-200 focus:border-daInfo-dark outline-none text-daInfo-dark font-medium"
+                    />
+                  </div>
+
                   <div>
                     <label className="text-xs font-black uppercase tracking-widest text-daInfo-dark block mb-2">Resume / Portfolio (PDF)</label>
                     <input 
@@ -497,9 +544,12 @@ export default function Jobs() {
                         try {
                           const token = localStorage.getItem('microgig_token');
                           const formData = new FormData();
-                          formData.append('message', applyModal.message);
-                          formData.append('experience', applyModal.experience);
-                          formData.append('contactInfo', applyModal.contactInfo);
+                           formData.append('message', applyModal.message);
+                           formData.append('experience', applyModal.experience);
+                           formData.append('contactInfo', applyModal.contactInfo);
+                           formData.append('bidAmount', applyModal.bidAmount);
+                           formData.append('deliveryTime', applyModal.deliveryTime);
+                           formData.append('portfolioUrl', applyModal.portfolioUrl);
                           if (applyModal.attachment) {
                             formData.append('attachment', applyModal.attachment);
                           }
@@ -515,9 +565,9 @@ export default function Jobs() {
                           if (res.ok) {
                             setApplyStatus({ type: 'success', msg: 'Application Deployed!' });
                             setTimeout(() => {
-                              setApplyModal({ shown: false, message: '', experience: '', contactInfo: '', attachment: null });
-                              setApplyStatus(null);
-                              setSelectedJob(null); // Close main modal too
+                               setApplyModal({ shown: false, message: '', experience: '', contactInfo: '', bidAmount: '', deliveryTime: '', portfolioUrl: '', attachment: null });
+                               setApplyStatus(null);
+                               setSelectedJob(null); // Close main modal too
                             }, 1500);
                           } else {
                             setApplyStatus({ type: 'error', msg: data.message || 'Error applying' });
@@ -534,7 +584,7 @@ export default function Jobs() {
                       {applyLoading ? 'SENDING...' : 'COMMIT APPLICATION'}
                     </button>
                     <button 
-                      onClick={() => setApplyModal({ shown: false, message: '', experience: '', contactInfo: '' })}
+                      onClick={() => setApplyModal({ shown: false, message: '', experience: '', contactInfo: '', bidAmount: '', deliveryTime: '', portfolioUrl: '', attachment: null })}
                       className="px-6 py-4 border-2 border-gray-200 font-bold uppercase tracking-widest hover:border-black transition-colors"
                     >
                       CANCEL

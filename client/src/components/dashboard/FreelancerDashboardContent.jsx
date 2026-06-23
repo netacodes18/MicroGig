@@ -1,8 +1,24 @@
-import { DollarSign, CheckCircle, Star, Activity, Award, Github, Linkedin, Globe, Briefcase, Clock } from 'lucide-react';
-
-export default function FreelancerDashboardContent({ profile, data, formatDate, setSubmissionModal, setWorkViewModal, handleReviewClient }) {
+export default function FreelancerDashboardContent({ profile, data, formatDate, setSubmissionModal, setWorkViewModal, handleReviewClient, setWorkspaceModal }) {
   const { recruitmentHistory, earnings, rating, completedGigs } = data;
   const { skills, portfolio } = profile;
+
+  const getStatusBadge = (statusStr) => {
+    const s = (statusStr || '').toUpperCase();
+    if (s === 'OPEN') return 'border-blue-200 text-blue-700 bg-blue-50';
+    if (s === 'APPLICATION_RECEIVED') return 'border-purple-200 text-purple-700 bg-purple-50';
+    if (s === 'HIRED' || s === 'IN_PROGRESS') return 'border-yellow-200 text-yellow-700 bg-yellow-50';
+    if (s === 'WORK_SUBMITTED' || s === 'UNDER_REVIEW') return 'border-blue-300 text-blue-800 bg-blue-50';
+    if (s === 'REVISION_REQUESTED') return 'border-red-200 text-red-700 bg-red-50';
+    if (s === 'APPROVED') return 'border-green-200 text-green-700 bg-green-50 animate-pulse';
+    if (s === 'COMPLETED') return 'border-green-300 text-green-800 bg-green-100';
+    return 'border-gray-200 text-gray-600 bg-gray-50';
+  };
+
+  const getStatusLabel = (statusStr) => {
+    const s = (statusStr || '').toUpperCase();
+    if (s === 'APPROVED') return 'APPROVED (AWAITING PAYMENT)';
+    return s || 'APPLIED';
+  };
 
   return (
     <>
@@ -11,7 +27,7 @@ export default function FreelancerDashboardContent({ profile, data, formatDate, 
         <div className="border border-gray-200 bg-gray-50 p-6 flex flex-col justify-between h-32 hover:border-gray-300 transition-colors">
           <p className="text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-1">Total Earnings</p>
           <div className="flex items-end justify-between mt-auto">
-             <span className="text-3xl font-black text-green-600">${(earnings || 0).toLocaleString()}</span>
+             <span className="text-3xl font-black text-green-600">₹{(earnings || 0).toLocaleString()}</span>
              <DollarSign className="text-gray-300 w-8 h-8" />
           </div>
         </div>
@@ -103,66 +119,54 @@ export default function FreelancerDashboardContent({ profile, data, formatDate, 
           </div>
           
           <div className="divide-y divide-gray-100">
-            {recruitmentHistory?.map((historyItem, idx) => (
-              <div key={idx} className="p-4 flex flex-col md:grid md:grid-cols-5 md:items-center hover:bg-gray-50 transition-colors">
-                 <div className="col-span-2 mb-2 md:mb-0">
-                    <h4 className="font-bold text-daInfo-dark leading-tight line-clamp-1">{historyItem.title}</h4>
-                    <p className="text-[10px] uppercase font-bold text-gray-400 mt-1 flex items-center gap-1">
-                       <Award className="w-3 h-3" /> {historyItem.role}
-                    </p>
-                 </div>
-                 
-                 <div className="text-sm text-gray-600 mb-2 md:mb-0 truncate pr-4">
-                    <span className="md:hidden text-xs font-bold uppercase text-gray-400 mr-2">Client:</span>
-                    {historyItem.poster}
-                 </div>
-                 
-                 <div>
-                    <span className="md:hidden text-xs font-bold uppercase text-gray-400 mr-2">Status:</span>
-                    <span className={`text-[10px] font-bold uppercase tracking-widest px-2 py-1 border ${
-                       historyItem.status === 'open' ? 'border-blue-200 text-blue-700 bg-blue-50' : 
-                       historyItem.status === 'in-progress' ? 'border-yellow-200 text-yellow-700 bg-yellow-50' : 
-                       historyItem.status === 'accepted' ? 'border-blue-300 text-blue-800 bg-blue-50' :
-                       historyItem.status === 'needs-review' ? 'border-daInfo-pink text-daInfo-pink bg-pink-50' : 
-                       historyItem.status === 'completed' ? 'border-green-200 text-green-700 bg-green-50' : 
-                       'border-gray-200 text-gray-600 bg-gray-50'
-                     }`}>
-                       {historyItem.status === 'accepted' ? 'AWAITING PAYMENT' : (historyItem.status || 'Applied')}
-                    </span>
-                 </div>
-                 
-                 <div className="text-right text-sm font-medium text-gray-500 flex items-center md:justify-end gap-1">
-                    {historyItem.status === 'in-progress' && (
-                       <button 
-                         onClick={() => setSubmissionModal({ shown: true, jobId: historyItem._id, content: '' })}
-                         className="mr-4 text-[10px] font-black text-daInfo-blue border-b-2 border-daInfo-blue hover:text-daInfo-dark hover:border-daInfo-dark transition-all"
-                       >
-                         SUBMIT GIG
-                       </button>
-                    )}
-                    
-                    {(historyItem.status === 'needs-review' || historyItem.status === 'accepted' || historyItem.status === 'completed') && (
-                        <button 
-                          onClick={() => setWorkViewModal({ shown: true, submission: historyItem.submission, title: historyItem.title })}
-                          className="mr-4 text-[10px] font-black text-daInfo-pink border-b-2 border-daInfo-pink hover:text-daInfo-dark hover:border-daInfo-dark transition-all"
-                        >
-                          VIEW WORK
-                        </button>
-                     )}
-
-                     {historyItem.status === 'completed' && (
-                        <button 
-                          onClick={() => handleReviewClient(historyItem._id, historyItem.posterId, historyItem.title)}
-                          className="mr-4 text-[10px] font-black text-green-600 border-b-2 border-green-600 hover:text-daInfo-dark hover:border-daInfo-dark transition-all"
-                        >
-                          REVIEW CLIENT
-                        </button>
-                     )}
-                    <span className="md:hidden text-xs font-bold uppercase text-gray-400 mr-2">Date:</span>
-                    <Clock className="w-3 h-3" /> {formatDate(historyItem.date)}
-                 </div>
-              </div>
-            ))}
+            {recruitmentHistory?.map((historyItem, idx) => {
+              const statusUpper = (historyItem.status || '').toUpperCase();
+              const isAssigned = historyItem.role === 'Assigned Worker';
+              return (
+                <div key={idx} className="p-4 flex flex-col md:grid md:grid-cols-5 md:items-center hover:bg-gray-50 transition-colors">
+                   <div className="col-span-2 mb-2 md:mb-0">
+                      <h4 className="font-bold text-daInfo-dark leading-tight line-clamp-1">{historyItem.title}</h4>
+                      <p className="text-[10px] uppercase font-bold text-gray-400 mt-1 flex items-center gap-1">
+                         <Award className="w-3 h-3" /> {historyItem.role}
+                      </p>
+                   </div>
+                   
+                   <div className="text-sm text-gray-600 mb-2 md:mb-0 truncate pr-4 text-left">
+                      <span className="md:hidden text-xs font-bold uppercase text-gray-400 mr-2">Client:</span>
+                      {historyItem.poster}
+                   </div>
+                   
+                   <div className="text-left">
+                      <span className="md:hidden text-xs font-bold uppercase text-gray-400 mr-2">Status:</span>
+                      <span className={`text-[10px] font-bold uppercase tracking-widest px-2 py-1 border ${getStatusBadge(historyItem.status)}`}>
+                        {getStatusLabel(historyItem.status)}
+                      </span>
+                   </div>
+                   
+                   <div className="text-right text-sm font-medium text-gray-500 flex items-center md:justify-end gap-1">
+                      {isAssigned && (
+                         <button 
+                           onClick={() => setWorkspaceModal({ shown: true, jobId: historyItem._id })}
+                           className="mr-4 text-[10px] font-black text-daInfo-blue border-b-2 border-daInfo-blue hover:text-daInfo-dark hover:border-daInfo-dark transition-all"
+                         >
+                           OPEN WORKSPACE
+                         </button>
+                      )}
+                      
+                      {statusUpper === 'COMPLETED' && (
+                         <button 
+                           onClick={() => handleReviewClient(historyItem._id, historyItem.posterId, historyItem.title)}
+                           className="mr-4 text-[10px] font-black text-green-600 border-b-2 border-green-600 hover:text-daInfo-dark hover:border-daInfo-dark transition-all"
+                         >
+                           REVIEW CLIENT
+                         </button>
+                      )}
+                      <span className="md:hidden text-xs font-bold uppercase text-gray-400 mr-2">Date:</span>
+                      <Clock className="w-3 h-3" /> {formatDate(historyItem.date)}
+                   </div>
+                </div>
+              );
+            })}
           </div>
         </div>
       )}

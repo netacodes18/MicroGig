@@ -53,12 +53,34 @@ const jobSchema = new mongoose.Schema({
     attachmentName: { type: String, default: '' },
     appliedAt: { type: Date, default: Date.now },
     vibeMatch: { type: Number, default: 0 },
+    bidAmount: { type: Number, default: 0 },
+    deliveryTime: { type: String, default: '' },
+    portfolioUrl: { type: String, default: '' },
+    status: { type: String, enum: ['PENDING', 'HIRED', 'REJECTED'], default: 'PENDING' },
   }],
   status: {
     type: String,
-    enum: ['open', 'in-progress', 'needs-review', 'accepted', 'completed', 'cancelled'],
-    default: 'open',
+    enum: ['OPEN', 'APPLICATION_RECEIVED', 'HIRED', 'IN_PROGRESS', 'WORK_SUBMITTED', 'UNDER_REVIEW', 'REVISION_REQUESTED', 'APPROVED', 'COMPLETED', 'REJECTED'],
+    default: 'OPEN',
   },
+  paymentStatus: {
+    type: String,
+    enum: ['PENDING', 'READY_FOR_RELEASE', 'RELEASED'],
+    default: 'PENDING',
+  },
+  revisionFeedback: {
+    type: String,
+    default: '',
+  },
+  workspace: [{
+    sender: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    text: { type: String, required: true },
+    attachments: [{
+      url: String,
+      name: String
+    }],
+    createdAt: { type: Date, default: Date.now }
+  }],
   submission: {
     content: { type: String, default: '' },
     submittedAt: { type: Date },
@@ -72,6 +94,11 @@ const jobSchema = new mongoose.Schema({
   isFunded: {
     type: Boolean,
     default: false,
+  },
+  paymentDetails: {
+    orderId: { type: String },
+    paymentId: { type: String },
+    paidAt: { type: Date }
   },
   isInstantHire: {
     type: Boolean,

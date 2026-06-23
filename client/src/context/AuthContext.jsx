@@ -14,7 +14,9 @@ export function AuthProvider({ children }) {
         const { data } = await api.get('/auth/me');
         setUser(data);
       } catch (err) {
-        console.error(err);
+        if (err.response?.status !== 401) {
+          console.error(err);
+        }
         setUser(null);
       } finally {
         setLoading(false);
@@ -26,6 +28,9 @@ export function AuthProvider({ children }) {
   const login = async (email, password) => {
     try {
       const { data } = await api.post('/auth/login', { email, password });
+      if (data.token) {
+        localStorage.setItem('microgig_token', data.token);
+      }
       setUser(data.user);
       return { success: true, user: data.user };
     } catch (err) {
@@ -36,6 +41,9 @@ export function AuthProvider({ children }) {
   const signup = async (name, email, password, role = 'freelancer', dob) => {
     try {
       const { data } = await api.post('/auth/register', { name, email, password, role, dob });
+      if (data.token) {
+        localStorage.setItem('microgig_token', data.token);
+      }
       setUser(data.user);
       return { success: true, user: data.user };
     } catch (err) {
@@ -49,6 +57,7 @@ export function AuthProvider({ children }) {
     } catch(err) {
       console.error(err);
     }
+    localStorage.removeItem('microgig_token');
     setUser(null);
   };
 
@@ -59,6 +68,9 @@ export function AuthProvider({ children }) {
   const googleLogin = async (token, role = 'freelancer') => {
     try {
       const { data } = await api.post('/auth/google', { token, role });
+      if (data.token) {
+        localStorage.setItem('microgig_token', data.token);
+      }
       setUser(data.user);
       return { success: true, user: data.user };
     } catch (err) {

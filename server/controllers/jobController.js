@@ -59,6 +59,9 @@ exports.getJobById = async (req, res, next) => {
 // POST /api/jobs
 exports.createJob = async (req, res, next) => {
   try {
+    if (req.user.role !== 'client') {
+      return res.status(403).json({ message: 'Only client accounts can post gigs' });
+    }
     const job = await Job.create({ ...req.body, poster: req.user._id });
     res.status(201).json(job);
   } catch (err) { next(err); }
@@ -108,7 +111,7 @@ exports.applyToJob = async (req, res, next) => {
     const alreadyApplied = job.applicants.some(a => a.user.toString() === req.user._id.toString());
     if (alreadyApplied) return res.status(400).json({ message: 'Already applied' });
 
-    const { message, experience, contactInfo } = req.body;
+    const { message, experience, contactInfo, bidAmount, deliveryTime, portfolioUrl } = req.body;
     
     let attachmentUrl = '';
     let attachmentName = '';
@@ -163,8 +166,16 @@ exports.applyToJob = async (req, res, next) => {
       contactInfo: contactInfo || '',
       attachmentUrl,
       attachmentName,
-      vibeMatch
+      vibeMatch,
+      bidAmount: Number(bidAmount) || 0,
+      deliveryTime: deliveryTime || '',
+      portfolioUrl: portfolioUrl || '',
+      status: 'PENDING'
     });
+
+    if (job.status === 'OPEN' || job.status === 'open') {
+      job.status = 'APPLICATION_RECEIVED';
+    }
     await job.save();
 
     // Trigger Notification for Client
@@ -248,13 +259,21 @@ exports.submitWork = async (req, res, next) => {
       }
     }
 
-    job.status = 'needs-review';
+    job.status = 'WORK_SUBMITTED';
     job.submission = { 
       content, 
       submittedAt: Date.now(),
       aiVerificationScore,
       aiVerificationNotes
     };
+
+    // Log the submission in the workspace
+    job.workspace.push({
+      sender: req.user._id,
+      text: `[WORK SUBMITTED] Deliverable details: ${content}`,
+      createdAt: new Date()
+    });
+
     await job.save();
 
     // Notify Client
@@ -280,34 +299,174 @@ exports.acceptWork = async (req, res, next) => {
       return res.status(403).json({ message: 'Not authorized' });
     }
 
-    if (job.status !== 'needs-review') {
-      return res.status(400).json({ message: 'Job is not in review status' });
-    }
+    job.status = 'APPROVED';
+    job.paymentStatus = 'READY_FOR_RELEASE';
+    
+    // Log the approval in workspace
+    job.workspace.push({
+      sender: req.user._id,
+      text: `[WORK APPROVED] Project deliverables approved. Ready for payment release.`,
+      createdAt: new Date()
+    });
 
-    job.status = 'completed';
     await job.save();
-
-    // Release Escrow: Update Freelancer Earnings
-    const User = require('../models/User');
-    if (job.assignedTo) {
-      const freelancer = await User.findById(job.assignedTo);
-      if (freelancer) {
-        freelancer.totalEarnings = (freelancer.totalEarnings || 0) + (job.budget.max || 0);
-        freelancer.completedGigs = (freelancer.completedGigs || 0) + 1;
-        await freelancer.save();
-      }
-    }
 
     // Notify Freelancer
     await Notification.create({
       recipient: job.assignedTo,
       sender: req.user._id,
-      type: 'payment',
+      type: 'other',
       job: job._id,
-      message: `Your work for "${job.title}" has been accepted! The escrow funds (₹${job.budget.max || 0}) have been released to your earnings balance.`
+      message: `Your work for "${job.title}" has been approved! The client can now release payment.`
     });
 
-    res.json({ message: 'Work accepted and escrow funds released', job });
+    res.json({ message: 'Work approved successfully. Payment is ready for release.', job });
+  } catch (err) { next(err); }
+};
+
+// POST /api/jobs/:id/approve (Same as acceptWork for route safety)
+exports.approveWork = exports.acceptWork;
+
+// POST /api/jobs/:id/revision
+exports.requestRevisions = async (req, res, next) => {
+  try {
+    const { feedback } = req.body;
+    const job = await Job.findById(req.params.id);
+    if (!job) return res.status(404).json({ message: 'Job not found' });
+
+    if (job.poster.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: 'Not authorized' });
+    }
+
+    job.status = 'REVISION_REQUESTED';
+    job.revisionFeedback = feedback || '';
+
+    // Append revision feedback as a message to the workspace
+    job.workspace.push({
+      sender: req.user._id,
+      text: `[REVISION REQUESTED] Feedback: ${feedback || 'Please review and make adjustments.'}`,
+      createdAt: new Date()
+    });
+
+    await job.save();
+
+    // Notify freelancer
+    await Notification.create({
+      recipient: job.assignedTo,
+      sender: req.user._id,
+      type: 'other',
+      job: job._id,
+      message: `Revision requested for "${job.title}". Feedback: ${feedback || 'No comments left.'}`
+    });
+
+    res.json({ message: 'Revision requested successfully', job });
+  } catch (err) { next(err); }
+};
+
+// POST /api/jobs/:id/workspace/message
+exports.postWorkspaceMessage = async (req, res, next) => {
+  try {
+    const { text } = req.body;
+    const job = await Job.findById(req.params.id);
+    if (!job) return res.status(404).json({ message: 'Job not found' });
+
+    const isPoster = job.poster.toString() === req.user._id.toString();
+    const isAssigned = job.assignedTo && job.assignedTo.toString() === req.user._id.toString();
+
+    if (!isPoster && !isAssigned) {
+      return res.status(403).json({ message: 'Not authorized to post to this workspace' });
+    }
+
+    let attachments = [];
+    if (req.file) {
+      attachments.push({
+        url: req.file.path,
+        name: req.file.originalname
+      });
+    }
+
+    job.workspace.push({
+      sender: req.user._id,
+      text: text || 'Uploaded a file',
+      attachments,
+      createdAt: new Date()
+    });
+
+    await job.save();
+    
+    // Notify other party
+    const recipient = isPoster ? job.assignedTo : job.poster;
+    if (recipient) {
+      await Notification.create({
+        recipient,
+        sender: req.user._id,
+        type: 'other',
+        job: job._id,
+        message: `${req.user.name} posted an update in the project workspace: ${job.title}`
+      });
+    }
+
+    res.json({ message: 'Workspace message posted successfully', workspace: job.workspace });
+  } catch (err) { next(err); }
+};
+
+// POST /api/jobs/:id/hire
+exports.hireFreelancer = async (req, res, next) => {
+  try {
+    const { freelancerId } = req.body;
+    const job = await Job.findById(req.params.id);
+    if (!job) return res.status(404).json({ message: 'Job not found' });
+
+    if (job.poster.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: 'Not authorized' });
+    }
+
+    // Assign worker & change status to IN_PROGRESS
+    job.assignedTo = freelancerId;
+    job.status = 'IN_PROGRESS';
+
+    // Update applicant statuses
+    job.applicants.forEach(a => {
+      if (a.user.toString() === freelancerId.toString()) {
+        a.status = 'HIRED';
+      } else {
+        a.status = 'REJECTED';
+      }
+    });
+
+    // Initialize workspace with a default welcome message
+    job.workspace = [{
+      sender: req.user._id,
+      text: `Project Workspace initiated. Welcome aboard! Let's get started on: "${job.title}"`,
+      createdAt: new Date()
+    }];
+
+    await job.save();
+
+    // Notify Hired Freelancer
+    await Notification.create({
+      recipient: freelancerId,
+      sender: req.user._id,
+      type: 'hire',
+      job: job._id,
+      message: `Congratulations! You have been hired for "${job.title}".`
+    });
+
+    // Notify Rejected Freelancers
+    const rejectedApplicants = job.applicants.filter(a => a.user.toString() !== freelancerId.toString());
+    for (const applicant of rejectedApplicants) {
+      if (applicant.user) {
+        await Notification.create({
+          recipient: applicant.user,
+          sender: req.user._id,
+          type: 'other',
+          job: job._id,
+          message: `Your application for "${job.title}" was not selected.`
+        });
+      }
+    }
+
+    res.json({ message: 'Freelancer hired successfully', job });
   } catch (err) { next(err); }
 };
 
@@ -367,4 +526,34 @@ exports.generateJobData = async (req, res, next) => {
       suggestion: 'Please check if your GEMINI_API_KEY is correctly set.'
     });
   }
+};
+
+// POST /api/jobs/:id/reject
+exports.rejectApplicant = async (req, res, next) => {
+  try {
+    const { applicantId } = req.body;
+    const job = await Job.findById(req.params.id);
+    if (!job) return res.status(404).json({ message: 'Job not found' });
+
+    if (job.poster.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: 'Not authorized' });
+    }
+
+    const applicant = job.applicants.find(a => a.user.toString() === applicantId.toString());
+    if (applicant) {
+      applicant.status = 'REJECTED';
+
+      // Notify freelancer
+      await Notification.create({
+        recipient: applicantId,
+        sender: req.user._id,
+        type: 'other',
+        job: job._id,
+        message: `Your application for "${job.title}" was not selected.`
+      });
+    }
+
+    await job.save();
+    res.json({ message: 'Applicant rejected successfully', job });
+  } catch (err) { next(err); }
 };
