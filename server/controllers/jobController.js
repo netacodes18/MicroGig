@@ -50,7 +50,8 @@ exports.getJobById = async (req, res, next) => {
   try {
     const job = await Job.findById(req.params.id)
       .populate('poster', 'name avatar rating reviewCount bio skills')
-      .populate('applicants.user', 'name avatar rating');
+      .populate('applicants.user', 'name avatar rating')
+      .populate('statusHistory.changedBy', 'name');
     if (!job) return res.status(404).json({ message: 'Job not found' });
     res.json(job);
   } catch (err) { next(err); }
@@ -62,7 +63,15 @@ exports.createJob = async (req, res, next) => {
     if (req.user.role !== 'client') {
       return res.status(403).json({ message: 'Only client accounts can post gigs' });
     }
-    const job = await Job.create({ ...req.body, poster: req.user._id });
+    const job = await Job.create({
+      ...req.body,
+      poster: req.user._id,
+      statusHistory: [{
+        status: 'OPEN',
+        changedBy: req.user._id,
+        timestamp: new Date()
+      }]
+    });
     res.status(201).json(job);
   } catch (err) { next(err); }
 };
@@ -175,6 +184,11 @@ exports.applyToJob = async (req, res, next) => {
 
     if (job.status === 'OPEN' || job.status === 'open') {
       job.status = 'APPLICATION_RECEIVED';
+      job.statusHistory.push({
+        status: 'APPLICATION_RECEIVED',
+        changedBy: req.user._id,
+        timestamp: new Date()
+      });
     }
     await job.save();
 
@@ -266,6 +280,11 @@ exports.submitWork = async (req, res, next) => {
       aiVerificationScore,
       aiVerificationNotes
     };
+    job.statusHistory.push({
+      status: 'WORK_SUBMITTED',
+      changedBy: req.user._id,
+      timestamp: new Date()
+    });
 
     // Log the submission in the workspace
     job.workspace.push({
@@ -301,6 +320,11 @@ exports.acceptWork = async (req, res, next) => {
 
     job.status = 'APPROVED';
     job.paymentStatus = 'READY_FOR_RELEASE';
+    job.statusHistory.push({
+      status: 'APPROVED',
+      changedBy: req.user._id,
+      timestamp: new Date()
+    });
     
     // Log the approval in workspace
     job.workspace.push({
@@ -340,6 +364,11 @@ exports.requestRevisions = async (req, res, next) => {
 
     job.status = 'REVISION_REQUESTED';
     job.revisionFeedback = feedback || '';
+    job.statusHistory.push({
+      status: 'REVISION_REQUESTED',
+      changedBy: req.user._id,
+      timestamp: new Date()
+    });
 
     // Append revision feedback as a message to the workspace
     job.workspace.push({
@@ -424,6 +453,11 @@ exports.hireFreelancer = async (req, res, next) => {
     // Assign worker & change status to IN_PROGRESS
     job.assignedTo = freelancerId;
     job.status = 'IN_PROGRESS';
+    job.statusHistory.push({
+      status: 'IN_PROGRESS',
+      changedBy: req.user._id,
+      timestamp: new Date()
+    });
 
     // Update applicant statuses
     job.applicants.forEach(a => {

@@ -94,6 +94,11 @@ exports.verifyPayment = async (req, res, next) => {
     job.status = 'COMPLETED';
     job.paymentStatus = 'RELEASED';
     job.isFunded = true;
+    job.statusHistory.push({
+      status: 'COMPLETED',
+      changedBy: req.user._id,
+      timestamp: new Date()
+    });
     
     job.paymentDetails = {
       orderId: razorpay_order_id,

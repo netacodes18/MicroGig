@@ -275,7 +275,44 @@ export default function WorkspaceModal({ jobId, userRole, onClose, onRefresh, ha
                    </p>
                 </div>
               )}
-           </div>
+
+               {/* Stage Audit Logs */}
+               <div>
+                  <h4 className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-2">Stage Audit Logs</h4>
+                  {job.statusHistory && job.statusHistory.length > 0 ? (
+                    <div className="border border-gray-100 p-5 bg-white shadow-sm rounded-2xl space-y-4">
+                      {job.statusHistory.map((log, logIdx) => (
+                        <div key={log._id || logIdx} className="relative flex gap-3 text-left">
+                          {/* Timeline vertical connector */}
+                          {logIdx < job.statusHistory.length - 1 && (
+                            <div className="absolute left-[9px] top-4 bottom-[-16px] w-0.5 bg-gray-100" />
+                          )}
+                          {/* Timeline node dot */}
+                          <div className="w-5 h-5 rounded-full bg-emerald-50 border border-emerald-200 flex items-center justify-center flex-shrink-0 z-10">
+                            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                          </div>
+                          {/* Log content */}
+                          <div className="flex-1 min-w-0">
+                            <p className="font-bold text-daInfo-dark text-[10px] tracking-wide uppercase">
+                              {log.status?.replace('_', ' ')}
+                            </p>
+                            <p className="text-[10px] text-gray-400 mt-0.5">
+                              by <span className="font-bold text-gray-500">{log.changedBy?.name || 'System'}</span>
+                            </p>
+                            <p className="text-[9px] text-gray-300 mt-0.5">
+                              {new Date(log.timestamp).toLocaleString()}
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="border border-gray-100 p-4 bg-white shadow-sm rounded-2xl text-center">
+                      <p className="text-xs text-gray-400 italic">No stage logs recorded.</p>
+                    </div>
+                  )}
+               </div>
+            </div>
 
            {/* Right Column: Chat/Updates Log */}
            <div className="flex-1 flex flex-col bg-gray-50/40 h-[350px] md:h-auto overflow-hidden">

@@ -72,6 +72,11 @@ const jobSchema = new mongoose.Schema({
     type: String,
     default: '',
   },
+  statusHistory: [{
+    status: { type: String, required: true },
+    changedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    timestamp: { type: Date, default: Date.now }
+  }],
   workspace: [{
     sender: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     text: { type: String, required: true },
