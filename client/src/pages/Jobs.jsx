@@ -396,7 +396,9 @@ export default function Jobs() {
                           <span className="text-[10px] font-bold">★ {selectedJob.poster.rating}</span>
                         </div>
                       </div>
-                                         <div className="pt-2">
+                    </div>
+
+                    <div className="pt-2">
                        {authUser?.role === 'client' || (authUser && (selectedJob.poster?._id === authUser._id || selectedJob.poster === authUser._id)) ? (
                           <button 
                             onClick={() => {
@@ -435,7 +437,7 @@ export default function Jobs() {
                              <span className="w-2 h-2 bg-daInfo-blue absolute right-5 group-hover:bg-white transition-colors" />
                           </button>
                        )}
-                    </div>  </div>
+                    </div>
 
                   </div>
                 </div>
