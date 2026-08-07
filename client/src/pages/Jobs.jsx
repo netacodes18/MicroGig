@@ -86,12 +86,12 @@ export default function Jobs() {
 
   // Prevent body scrolling when modal is open
   useEffect(() => {
-    if (selectedJob) {
+    if (selectedJob || applyModal.shown) {
       document.body.style.overflow = 'hidden';
     } else {
       document.body.style.overflow = 'unset';
     }
-  }, [selectedJob]);
+  }, [selectedJob, applyModal.shown]);
 
   const hasApplied = (job) => {
     if (!authUser || authUser.role !== 'freelancer') return false;
@@ -448,9 +448,16 @@ export default function Jobs() {
         {applyModal.shown && (
           <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-gray-900/60 backdrop-blur-md" onClick={() => setApplyModal({ shown: false, message: '', experience: '', contactInfo: '', attachment: null })} />
-            <div className="relative bg-white w-full max-w-xl border-2 border-black da-shadow-lg-black p-8 animate-scale-in text-left">
-               <h3 className="text-2xl font-black text-daInfo-dark uppercase tracking-tight mb-2">Gig Application Card</h3>
-               <p className="text-gray-500 text-sm mb-8 font-bold italic">This information will be sent directly to the employer's dashboard.</p>
+            <div className="relative bg-white w-full max-w-xl border-2 border-black da-shadow-lg-black p-6 sm:p-8 animate-scale-in text-left max-h-[90vh] overflow-y-auto">
+               <button 
+                 onClick={() => setApplyModal({ shown: false, message: '', experience: '', contactInfo: '', attachment: null })} 
+                 className="absolute top-4 right-4 p-2 text-gray-400 hover:text-black hover:bg-gray-100 transition-colors"
+                 aria-label="Close Modal"
+               >
+                 <X className="w-6 h-6" />
+               </button>
+               <h3 className="text-2xl font-black text-daInfo-dark uppercase tracking-tight mb-2 pr-8">Gig Application Card</h3>
+               <p className="text-gray-500 text-sm mb-6 font-bold italic">This information will be sent directly to the employer's dashboard.</p>
                
                <div className="space-y-6">
                   <div>

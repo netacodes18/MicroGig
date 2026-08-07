@@ -1,0 +1,55 @@
+services:
+  # MicroGig Backend API (Optional - can also run locally with 'npm run dev' on host)
+  api:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: gigly-api
+    ports:
+      - "5000:5000"
+    environment:
+      - NODE_ENV=production
+      - PORT=5000
+    env_file:
+      - ./server/.env
+    restart: unless-stopped
+    networks:
+      - gigly-network
+
+  # Prometheus Metrics Scraper
+  prometheus:
+    image: prom/prometheus:v2.50.0
+    container_name: gigly-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped
+    networks:
+      - gigly-network
+
+  # Grafana Visualization Dashboards
+  grafana:
+    image: grafana/grafana:10.3.1
+    container_name: gigly-grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - ./monitoring/grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
+      - ./monitoring/grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    restart: unless-stopped
+    depends_on:
+      - prometheus
+    networks:
+      - gigly-network
+
+networks:
+  gigly-network:
+    driver: bridge

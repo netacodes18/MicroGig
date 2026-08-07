@@ -6,6 +6,7 @@ const helmet = require('helmet');
 const compression = require('compression');
 const rateLimit = require('express-rate-limit');
 const connectDB = require('./config/db');
+const { register, metricsMiddleware } = require('./middleware/metrics');
 
 // Load env vars
 dotenv.config();
@@ -18,7 +19,7 @@ const app = express();
 // Global Rate Limiter
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // Limit each IP to 100 requests per windowMs
+  max: 1000, // Limit each IP to 1000 requests per 15 minutes window
   standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
   legacyHeaders: false, // Disable the `X-RateLimit-*` headers
   message: {
@@ -27,6 +28,7 @@ const limiter = rateLimit({
 });
 
 // Middleware
+app.use(metricsMiddleware);
 app.use(compression());
 app.use(limiter);
 
@@ -52,6 +54,16 @@ app.use('/api/jobs', require('./routes/jobs'));
 app.use('/api/reviews', require('./routes/reviews'));
 app.use('/api/notifications', require('./routes/notifications'));
 app.use('/api/payments', require('./routes/payments'));
+
+// Prometheus Metrics Endpoint
+app.get('/metrics', async (req, res) => {
+  try {
+    res.set('Content-Type', register.contentType);
+    res.end(await register.metrics());
+  } catch (error) {
+    res.status(500).end(error);
+  }
+});
 
 // Health check
 app.get('/api/health', (req, res) => {

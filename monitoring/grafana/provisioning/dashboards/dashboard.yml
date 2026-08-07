@@ -1,0 +1,11 @@
+apiVersion: 1
+
+providers:
+  - name: 'MicroGig Dashboards'
+    orgId: 1
+    folder: 'MicroGig Observability'
+    type: file
+    disableDeletion: false
+    editable: true
+    options:
+      path: /var/lib/grafana/dashboards
