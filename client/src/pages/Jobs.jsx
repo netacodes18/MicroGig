@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { Search, Filter, Clock, Zap, X, MapPin, Briefcase } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../components/ui/Toast';
+import ManageGigModal from '../components/modals/ManageGigModal';
+import api from '../lib/api';
 
 // Cache Buster: v1.0.1 - Fixed ReferenceError
 export default function Jobs() {
@@ -23,6 +25,7 @@ export default function Jobs() {
   const [applyModal, setApplyModal] = useState({ shown: false, message: '', experience: '', contactInfo: '', bidAmount: '', deliveryTime: '', portfolioUrl: '', attachment: null });
   const [applyLoading, setApplyLoading] = useState(false);
   const [applyStatus, setApplyStatus] = useState(null);
+  const [manageGigModal, setManageGigModal] = useState({ shown: false, jobId: null });
   
   // View Mode for Clients: 'my-postings' | 'all-gigs'
   const [viewMode, setViewMode] = useState('my-postings');
@@ -451,8 +454,8 @@ export default function Jobs() {
                              <button 
                                onClick={() => {
                                  const targetJobId = selectedJob._id;
+                                 setManageGigModal({ shown: true, jobId: targetJobId });
                                  setSelectedJob(null);
-                                 navigate('/dashboard', { state: { manageJobId: targetJobId } });
                                }} 
                                className="w-full relative inline-flex items-center justify-center gap-3 px-6 py-5 text-sm font-bold text-white uppercase tracking-widest bg-daInfo-dark hover:bg-black transition-all group shadow-sm"
                              >
@@ -657,6 +660,13 @@ export default function Jobs() {
             </div>
           </div>
         )}
+      {manageGigModal.shown && (
+        <ManageGigModal
+          jobId={manageGigModal.jobId}
+          onClose={() => setManageGigModal({ shown: false, jobId: null })}
+          onRefresh={() => {}}
+        />
+      )}
       </div>
     </div>
   );
