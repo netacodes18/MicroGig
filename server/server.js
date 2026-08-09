@@ -54,6 +54,7 @@ app.use('/api/jobs', require('./routes/jobs'));
 app.use('/api/reviews', require('./routes/reviews'));
 app.use('/api/notifications', require('./routes/notifications'));
 app.use('/api/payments', require('./routes/payments'));
+app.use('/api/contact', require('./routes/contact'));
 
 // Prometheus Metrics Endpoint
 app.get('/metrics', async (req, res) => {

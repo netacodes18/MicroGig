@@ -5,12 +5,32 @@ import { Mail, MessageSquare, MapPin, Phone, Send, CheckCircle } from 'lucide-re
 export default function Contact() {
   const [form, setForm] = useState({ name: '', email: '', subject: '', message: '' });
   const [submitted, setSubmitted] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    setSubmitted(true);
-    setTimeout(() => setSubmitted(false), 4000);
-    setForm({ name: '', email: '', subject: '', message: '' });
+    setLoading(true);
+    setError('');
+
+    try {
+      const res = await fetch('/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form)
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setSubmitted(true);
+        setForm({ name: '', email: '', subject: '', message: '' });
+      } else {
+        setError(data.message || 'Failed to send message.');
+      }
+    } catch (err) {
+      setError('Connection error. Please try again later.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const contactInfo = [
@@ -170,12 +190,19 @@ export default function Contact() {
                     />
                   </div>
 
+                  {error && (
+                    <div className="bg-red-50 border-l-4 border-red-500 p-4 text-xs font-bold text-red-700 uppercase tracking-widest">
+                      {error}
+                    </div>
+                  )}
+
                   <div className="pt-6">
                     <button 
                       type="submit" 
-                      className="da-btn-primary w-full md:w-auto md:px-12 py-5 text-sm"
+                      disabled={loading}
+                      className="da-btn-primary w-full md:w-auto md:px-12 py-5 text-sm disabled:opacity-50 transition-all"
                     >
-                      SEND MESSAGE
+                      {loading ? 'SENDING...' : 'SEND MESSAGE'}
                     </button>
                   </div>
                 </form>
