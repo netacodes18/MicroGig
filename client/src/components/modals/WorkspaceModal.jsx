@@ -23,6 +23,7 @@ export default function WorkspaceModal({ jobId, userRole, onClose, onRefresh, ha
     } catch (err) {
       toast.error('Failed to load workspace details.');
       console.error(err);
+      if (onClose) onClose();
     } finally {
       setLoading(false);
     }
@@ -45,6 +46,13 @@ export default function WorkspaceModal({ jobId, userRole, onClose, onRefresh, ha
       <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
         <div className="absolute inset-0 bg-gray-900/60 backdrop-blur-md" />
         <div className="relative bg-white border border-gray-100 p-8 rounded-3xl shadow-xl text-center max-w-sm w-full">
+           <button 
+             onClick={onClose} 
+             aria-label="Close workspace"
+             className="absolute top-4 right-4 p-2 text-gray-400 hover:text-gray-900 rounded-full hover:bg-gray-100 transition-colors"
+           >
+             <X className="w-4 h-4" />
+           </button>
            <div className="w-8 h-8 rounded-full border-4 border-gray-200 border-t-black animate-spin mx-auto mb-4" />
            <p className="font-bold text-xs uppercase tracking-widest text-gray-400">Loading Workspace...</p>
         </div>

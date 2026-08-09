@@ -441,44 +441,56 @@ export default function Jobs() {
                     </div>
 
                     <div className="pt-2">
-                       {authUser?.role === 'client' || (authUser && (selectedJob.poster?._id === authUser._id || selectedJob.poster === authUser._id)) ? (
-                          <button 
-                            onClick={() => {
-                              if (selectedJob.poster?._id === authUser?._id) {
-                                navigate(`/dashboard?jobId=${selectedJob._id}`);
-                              } else {
-                                toast.warning('Employer accounts cannot apply for gigs.');
-                              }
-                            }} 
-                            className="w-full relative inline-flex items-center justify-center gap-3 px-6 py-5 text-sm font-bold text-white uppercase tracking-widest bg-daInfo-dark hover:bg-black transition-all group shadow-sm"
-                          >
-                             {selectedJob.poster?._id === authUser?._id ? 'MANAGE THIS GIG' : 'CLIENT ACCOUNT'}
-                             <span className="w-2 h-2 bg-daInfo-blue absolute right-5 group-hover:bg-white transition-colors" />
-                          </button>
-                       ) : hasApplied(selectedJob) ? (
-                          <button 
-                            disabled
-                            className="w-full relative inline-flex items-center justify-center gap-3 px-6 py-5 text-sm font-bold text-daInfo-blue uppercase tracking-widest bg-blue-50 border border-blue-100 cursor-not-allowed"
-                          >
-                             ALREADY APPLIED
-                             <span className="w-2 h-2 bg-daInfo-blue absolute right-5" />
-                          </button>
-                       ) : (
-                          <button 
-                            onClick={() => {
-                              if (!authUser) {
-                                toast.error('You must be logged in as a freelancer to apply.');
-                                navigate('/login');
-                                return;
-                              }
+                       {(() => {
+                         const posterId = typeof selectedJob.poster === 'object' ? selectedJob.poster?._id : selectedJob.poster;
+                         const isOwnJob = authUser && String(posterId) === String(authUser._id);
+                         const isClient = authUser?.role === 'client';
+
+                         if (isOwnJob || isClient) {
+                           return (
+                             <button 
+                               onClick={() => {
+                                 const targetJobId = selectedJob._id;
+                                 setSelectedJob(null);
+                                 navigate(`/dashboard?jobId=${targetJobId}`);
+                               }} 
+                               className="w-full relative inline-flex items-center justify-center gap-3 px-6 py-5 text-sm font-bold text-white uppercase tracking-widest bg-daInfo-dark hover:bg-black transition-all group shadow-sm"
+                             >
+                                {isOwnJob ? 'MANAGE THIS GIG' : 'GO TO DASHBOARD'}
+                                <span className="w-2 h-2 bg-daInfo-blue absolute right-5 group-hover:bg-white transition-colors" />
+                             </button>
+                           );
+                         }
+
+                         if (hasApplied(selectedJob)) {
+                           return (
+                             <button 
+                               disabled
+                               className="w-full relative inline-flex items-center justify-center gap-3 px-6 py-5 text-sm font-bold text-daInfo-blue uppercase tracking-widest bg-blue-50 border border-blue-100 cursor-not-allowed"
+                             >
+                                ALREADY APPLIED
+                                <span className="w-2 h-2 bg-daInfo-blue absolute right-5" />
+                             </button>
+                           );
+                         }
+
+                         return (
+                           <button 
+                             onClick={() => {
+                               if (!authUser) {
+                                 toast.error('You must be logged in as a freelancer to apply.');
+                                 navigate('/login');
+                                 return;
+                               }
                                setApplyModal({ shown: true, message: '', experience: '', contactInfo: '', bidAmount: '', deliveryTime: '', portfolioUrl: '', attachment: null });
-                            }}
-                            className="w-full relative inline-flex items-center justify-center gap-3 px-6 py-5 text-sm font-bold text-white uppercase tracking-widest bg-daInfo-dark hover:bg-black transition-all group shadow-sm"
-                          >
-                             APPLY TO GIG
-                             <span className="w-2 h-2 bg-daInfo-blue absolute right-5 group-hover:bg-white transition-colors" />
-                          </button>
-                       )}
+                             }}
+                             className="w-full relative inline-flex items-center justify-center gap-3 px-6 py-5 text-sm font-bold text-white uppercase tracking-widest bg-daInfo-dark hover:bg-black transition-all group shadow-sm"
+                           >
+                              APPLY TO GIG
+                              <span className="w-2 h-2 bg-daInfo-blue absolute right-5 group-hover:bg-white transition-colors" />
+                           </button>
+                         );
+                       })()}
                     </div>
 
                   </div>

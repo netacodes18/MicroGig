@@ -18,7 +18,7 @@ import PaymentModal from '../components/modals/PaymentModal';
 import WorkspaceModal from '../components/modals/WorkspaceModal';
 
 export default function Dashboard() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const toast = useToast();
   const [data, setData] = useState(null);
@@ -50,11 +50,15 @@ export default function Dashboard() {
         const { data: json } = await api.get('/users/me/dashboard');
         setData(json);
 
-        // Check URL params for target jobId to open WorkspaceModal directly
+        // Check URL params for target jobId
         const params = new URLSearchParams(window.location.search);
         const targetJobId = params.get('jobId');
-        if (targetJobId) {
-          setWorkspaceModal({ shown: true, jobId: targetJobId });
+        if (targetJobId && json.postedJobs) {
+          const matchingJob = json.postedJobs.find(j => String(j._id) === String(targetJobId));
+          const statusUpper = matchingJob ? (matchingJob.status || '').toUpperCase() : '';
+          if (matchingJob && ['HIRED', 'IN_PROGRESS', 'WORK_SUBMITTED', 'UNDER_REVIEW', 'APPROVED', 'COMPLETED'].includes(statusUpper)) {
+            setWorkspaceModal({ shown: true, jobId: targetJobId });
+          }
         }
       } catch (err) {
         toast.error('Failed to load dashboard data.');
@@ -206,6 +210,15 @@ export default function Dashboard() {
     finally { setActionLoading(false); }
   };
 
+  if (authLoading || loading || !data) {
+    return (
+      <div className="min-h-screen bg-white flex flex-col items-center justify-center gap-4">
+        <div className="w-10 h-10 rounded-full border-4 border-gray-200 border-t-daInfo-dark animate-spin mx-auto" />
+        <p className="text-xs font-bold uppercase tracking-widest text-gray-400">Loading Dashboard...</p>
+      </div>
+    );
+  }
+
   if (!user) {
     return (
       <div className="min-h-[60vh] flex items-center justify-center bg-white">
@@ -215,14 +228,6 @@ export default function Dashboard() {
           <p className="text-gray-500 mb-6">Log in to access your dashboard</p>
           <Link to="/login" className="da-btn-outline px-8">LOGIN</Link>
         </div>
-      </div>
-    );
-  }
-
-  if (loading || !data) {
-    return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="w-8 h-8 rounded-full border-4 border-gray-200 border-t-daInfo-dark animate-spin" />
       </div>
     );
   }
