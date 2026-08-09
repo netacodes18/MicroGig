@@ -223,148 +223,157 @@ export default function Jobs() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <div className="flex justify-between items-center mb-8 border-b border-gray-200 pb-4">
-           <p className="text-sm font-bold uppercase tracking-widest text-gray-500">
-             {filtered.length} AVAILABLE GIG{filtered.length !== 1 ? 'S' : ''}
-           </p>
-        </div>
-
-        {/* Job Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {filtered.map((job) => (
-            <div 
-              key={job._id} 
-              onClick={() => setSelectedJob(job)}
-              className="border border-gray-200 hover:border-black transition-all p-6 flex flex-col group cursor-pointer bg-white relative da-shadow-black-hover"
-            >
-              <div className="flex items-start justify-between mb-4">
-                <span className="text-xs font-bold uppercase tracking-widest text-gray-500">{job.category}</span>
-                <div className="flex gap-2">
-                  {job.isUrgent && <span className="text-[10px] font-bold uppercase tracking-widest text-red-600 flex items-center gap-1 border border-red-200 px-2 py-1"><Clock className="w-3 h-3" />Urgent</span>}
-                  {job.isInstantHire && <span className="text-[10px] font-bold uppercase tracking-widest text-blue-600 flex items-center gap-1 border border-blue-200 px-2 py-1"><Zap className="w-3 h-3" />Instant</span>}
-                </div>
-              </div>
-
-              <h3 className="text-xl font-bold text-daInfo-dark mb-4 leading-tight group-hover:text-daInfo-blue transition-colors line-clamp-2">{job.title}</h3>
-
-              <p className="text-gray-600 text-sm line-clamp-2 mb-6 flex-grow">{job.description.split('\n')[0]}</p>
-
-              <div className="flex flex-wrap gap-2 mb-6">
-                {job.skills.map(s => <span key={s} className="px-2 py-1 bg-gray-100 text-gray-600 text-xs font-semibold">{s}</span>)}
-              </div>
-
-              {/* Bottom Info & Action */}
-              <div className="flex items-center justify-between pt-6 border-t border-gray-100">
-                <div className="flex gap-6">
-                  <div className="flex flex-col text-left">
-                     <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-1">Pay</p>
-                     <span className="text-sm font-bold text-daInfo-dark">${job.budget.min}–${job.budget.max}</span>
-                  </div>
-                  <div className="flex flex-col text-left">
-                     <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-1">Time</p>
-                     <span className="text-[10px] font-bold text-gray-600 uppercase tracking-tighter">{job.duration}</span>
-                  </div>
-                </div>
-
-                 <div className="pt-0">
-                    {authUser?.role === 'client' || (authUser && (job.poster?._id === authUser._id || job.poster === authUser._id)) ? (
-                       <button 
-                         onClick={(e) => {
-                           e.stopPropagation();
-                           setSelectedJob(job);
-                         }}
-                         className="px-4 py-2 border-2 border-daInfo-dark text-daInfo-dark text-[10px] font-black uppercase tracking-[0.2em] hover:bg-gray-50 transition-all font-bold"
-                       >
-                          VIEW GIG
-                       </button>
-                    ) : hasApplied(job) ? (
-                       <button 
-                         disabled
-                         className="px-4 py-2 bg-gray-50 text-daInfo-blue border border-daInfo-blue/20 text-[10px] font-black uppercase tracking-[0.2em] cursor-not-allowed opacity-80"
-                       >
-                          ALREADY APPLIED
-                       </button>
-                    ) : (
-                       <button 
-                         onClick={(e) => {
-                           e.stopPropagation();
-                           if (!authUser) {
-                             toast.error('You must be logged in as a freelancer to apply.');
-                             navigate('/login');
-                             return;
-                           }
-                           setSelectedJob(job);
-                           setApplyModal({ shown: true, message: '', experience: '', contactInfo: '', bidAmount: '', deliveryTime: '', portfolioUrl: '', attachment: null });
-                         }}
-                         className="px-4 py-2 bg-daInfo-dark text-white text-[10px] font-black uppercase tracking-[0.2em] da-shadow-black hover:bg-black transition-all"
-                       >
-                          APPLY NOW
-                       </button>
-                    )}
-                 </div>
-              </div>
-
-              <div className="flex items-center gap-3 mt-6 pt-6 border-t border-gray-100">
-                <img src={job.poster.avatar} alt="" className="w-8 h-8 object-cover border border-gray-200" />
-                <div className="text-left">
-                  <span className="block text-xs font-bold text-daInfo-dark leading-none">{job.poster.name}</span>
-                  <span className="block text-[10px] font-bold text-gray-500 mt-1">★ {job.poster.rating}</span>
-                </div>
-              </div>
-
-              <div className="absolute bottom-0 left-0 w-full h-1 bg-daInfo-blue transform scale-x-0 group-hover:scale-x-100 transition-transform origin-left" />
-            </div>
-          ))}
-        </div>
-
-        {/* Pagination Controls */}
-        {totalPages > 1 && (
-          <div className="flex justify-center items-center gap-4 mt-12 mb-8">
-            <button 
-              onClick={() => setPage(p => Math.max(1, p - 1))}
-              disabled={page === 1}
-              className="px-6 py-2 border-2 border-gray-200 font-bold uppercase tracking-widest text-xs hover:border-black disabled:opacity-30 transition-colors"
-            >
-              Previous
-            </button>
-            <span className="text-xs font-black text-gray-500 uppercase tracking-widest">
-              Page {page} of {totalPages}
-            </span>
-            <button 
-              onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-              disabled={page === totalPages}
-              className="px-6 py-2 border-2 border-gray-200 font-bold uppercase tracking-widest text-xs hover:border-black disabled:opacity-30 transition-colors"
-            >
-              Next
-            </button>
+        {loading ? (
+          <div className="flex flex-col items-center justify-center py-20 gap-4">
+            <div className="w-10 h-10 rounded-full border-4 border-gray-200 border-t-daInfo-dark animate-spin" />
+            <p className="text-xs font-bold uppercase tracking-widest text-gray-400">Loading Gigs...</p>
           </div>
-        )}
+        ) : (
+          <>
+            <div className="flex justify-between items-center mb-8 border-b border-gray-200 pb-4">
+               <p className="text-sm font-bold uppercase tracking-widest text-gray-500">
+                 {filtered.length} AVAILABLE GIG{filtered.length !== 1 ? 'S' : ''}
+               </p>
+            </div>
 
-        {filtered.length === 0 && (
-          <div className="text-center py-20 px-6 border-2 border-dashed border-gray-200 max-w-xl mx-auto bg-gray-50/50">
-            <Briefcase className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-2xl font-bold text-daInfo-dark mb-2">
-              {authUser?.role === 'client' && viewMode === 'my-postings' ? 'No posted gigs found' : 'No matching gigs'}
-            </h3>
-            <p className="text-gray-600 text-sm mb-8 font-medium">
-              {authUser?.role === 'client' && viewMode === 'my-postings'
-                ? "You haven't posted any gigs yet under this account, or no gigs match your filters. Post a new gig to hire top specialists or browse all platform gigs."
-                : 'Try adjusting your filters or search terms.'}
-            </p>
-            {authUser?.role === 'client' && viewMode === 'my-postings' && (
-              <div className="flex flex-col sm:flex-row justify-center gap-4">
-                <button onClick={() => navigate('/jobs/new')} className="da-btn-primary text-xs justify-center py-4 px-6">
-                  + POST A NEW GIG
-                </button>
-                <button 
-                  onClick={() => setViewMode('all-gigs')} 
-                  className="da-btn-outline text-xs justify-center py-4 px-6"
+            {/* Job Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {filtered.map((job) => (
+                <div 
+                  key={job._id} 
+                  onClick={() => setSelectedJob(job)}
+                  className="border border-gray-200 hover:border-black transition-all p-6 flex flex-col group cursor-pointer bg-white relative da-shadow-black-hover"
                 >
-                  BROWSE ALL GIGS
+                  <div className="flex items-start justify-between mb-4">
+                    <span className="text-xs font-bold uppercase tracking-widest text-gray-500">{job.category}</span>
+                    <div className="flex gap-2">
+                      {job.isUrgent && <span className="text-[10px] font-bold uppercase tracking-widest text-red-600 flex items-center gap-1 border border-red-200 px-2 py-1"><Clock className="w-3 h-3" />Urgent</span>}
+                      {job.isInstantHire && <span className="text-[10px] font-bold uppercase tracking-widest text-blue-600 flex items-center gap-1 border border-blue-200 px-2 py-1"><Zap className="w-3 h-3" />Instant</span>}
+                    </div>
+                  </div>
+
+                  <h3 className="text-xl font-bold text-daInfo-dark mb-4 leading-tight group-hover:text-daInfo-blue transition-colors line-clamp-2">{job.title}</h3>
+
+                  <p className="text-gray-600 text-sm line-clamp-2 mb-6 flex-grow">{job.description.split('\n')[0]}</p>
+
+                  <div className="flex flex-wrap gap-2 mb-6">
+                    {job.skills.map(s => <span key={s} className="px-2 py-1 bg-gray-100 text-gray-600 text-xs font-semibold">{s}</span>)}
+                  </div>
+
+                  {/* Bottom Info & Action */}
+                  <div className="flex items-center justify-between pt-6 border-t border-gray-100">
+                    <div className="flex gap-6">
+                      <div className="flex flex-col text-left">
+                         <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-1">Pay</p>
+                         <span className="text-sm font-bold text-daInfo-dark">${job.budget.min}–${job.budget.max}</span>
+                      </div>
+                      <div className="flex flex-col text-left">
+                         <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-1">Time</p>
+                         <span className="text-[10px] font-bold text-gray-600 uppercase tracking-tighter">{job.duration}</span>
+                      </div>
+                    </div>
+
+                     <div className="pt-0">
+                        {authUser?.role === 'client' || (authUser && (job.poster?._id === authUser._id || job.poster === authUser._id)) ? (
+                           <button 
+                             onClick={(e) => {
+                               e.stopPropagation();
+                               setSelectedJob(job);
+                             }}
+                             className="px-4 py-2 border-2 border-daInfo-dark text-daInfo-dark text-[10px] font-black uppercase tracking-[0.2em] hover:bg-gray-50 transition-all font-bold"
+                           >
+                              VIEW GIG
+                           </button>
+                        ) : hasApplied(job) ? (
+                           <button 
+                             disabled
+                             className="px-4 py-2 bg-gray-50 text-daInfo-blue border border-daInfo-blue/20 text-[10px] font-black uppercase tracking-[0.2em] cursor-not-allowed opacity-80"
+                           >
+                              ALREADY APPLIED
+                           </button>
+                        ) : (
+                           <button 
+                             onClick={(e) => {
+                               e.stopPropagation();
+                               if (!authUser) {
+                                 toast.error('You must be logged in as a freelancer to apply.');
+                                 navigate('/login');
+                                 return;
+                               }
+                               setSelectedJob(job);
+                               setApplyModal({ shown: true, message: '', experience: '', contactInfo: '', bidAmount: '', deliveryTime: '', portfolioUrl: '', attachment: null });
+                             }}
+                             className="px-4 py-2 bg-daInfo-dark text-white text-[10px] font-black uppercase tracking-[0.2em] da-shadow-black hover:bg-black transition-all"
+                           >
+                              APPLY NOW
+                           </button>
+                        )}
+                     </div>
+                  </div>
+
+                  <div className="flex items-center gap-3 mt-6 pt-6 border-t border-gray-100">
+                    <img src={job.poster.avatar} alt="" className="w-8 h-8 object-cover border border-gray-200" />
+                    <div className="text-left">
+                      <span className="block text-xs font-bold text-daInfo-dark leading-none">{job.poster.name}</span>
+                      <span className="block text-[10px] font-bold text-gray-500 mt-1">★ {job.poster.rating}</span>
+                    </div>
+                  </div>
+
+                  <div className="absolute bottom-0 left-0 w-full h-1 bg-daInfo-blue transform scale-x-0 group-hover:scale-x-100 transition-transform origin-left" />
+                </div>
+              ))}
+            </div>
+
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+              <div className="flex justify-center items-center gap-4 mt-12 mb-8">
+                <button 
+                  onClick={() => setPage(p => Math.max(1, p - 1))}
+                  disabled={page === 1}
+                  className="px-6 py-2 border-2 border-gray-200 font-bold uppercase tracking-widest text-xs hover:border-black disabled:opacity-30 transition-colors"
+                >
+                  Previous
+                </button>
+                <span className="text-xs font-black text-gray-500 uppercase tracking-widest">
+                  Page {page} of {totalPages}
+                </span>
+                <button 
+                  onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                  disabled={page === totalPages}
+                  className="px-6 py-2 border-2 border-gray-200 font-bold uppercase tracking-widest text-xs hover:border-black disabled:opacity-30 transition-colors"
+                >
+                  Next
                 </button>
               </div>
             )}
-          </div>
+
+            {filtered.length === 0 && (
+              <div className="text-center py-20 px-6 border-2 border-dashed border-gray-200 max-w-xl mx-auto bg-gray-50/50">
+                <Briefcase className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-2xl font-bold text-daInfo-dark mb-2">
+                  {authUser?.role === 'client' && viewMode === 'my-postings' ? 'No posted gigs found' : 'No matching gigs'}
+                </h3>
+                <p className="text-gray-600 text-sm mb-8 font-medium">
+                  {authUser?.role === 'client' && viewMode === 'my-postings'
+                    ? "You haven't posted any gigs yet under this account, or no gigs match your filters. Post a new gig to hire top specialists or browse all platform gigs."
+                    : 'Try adjusting your filters or search terms.'}
+                </p>
+                {authUser?.role === 'client' && viewMode === 'my-postings' && (
+                  <div className="flex flex-col sm:flex-row justify-center gap-4">
+                    <button onClick={() => navigate('/jobs/new')} className="da-btn-primary text-xs justify-center py-4 px-6">
+                      + POST A NEW GIG
+                    </button>
+                    <button 
+                      onClick={() => setViewMode('all-gigs')} 
+                      className="da-btn-outline text-xs justify-center py-4 px-6"
+                    >
+                      BROWSE ALL GIGS
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+          </>
         )}
         
         {/* MODAL OVERLAY */}
