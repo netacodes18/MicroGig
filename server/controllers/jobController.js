@@ -14,7 +14,14 @@ exports.getJobs = async (req, res, next) => {
 
     if (category) query.category = category;
     if (skill) query.skills = { $in: skill.split(',') };
-    if (poster) query.poster = poster;
+    if (poster) {
+      const mongoose = require('mongoose');
+      if (mongoose.Types.ObjectId.isValid(poster)) {
+        query.poster = new mongoose.Types.ObjectId(poster);
+      } else {
+        query.poster = poster;
+      }
+    }
 
     if (status && status !== 'all') {
       query.status = { $regex: `^${status}$`, $options: 'i' };

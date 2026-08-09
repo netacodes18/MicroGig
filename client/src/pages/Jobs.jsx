@@ -24,6 +24,9 @@ export default function Jobs() {
   const [applyLoading, setApplyLoading] = useState(false);
   const [applyStatus, setApplyStatus] = useState(null);
   
+  // View Mode for Clients: 'my-postings' | 'all-gigs'
+  const [viewMode, setViewMode] = useState('my-postings');
+  
   // Pagination State
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -49,7 +52,7 @@ export default function Jobs() {
         if (maxBudget) query.append('maxBudget', maxBudget);
         if (selectedDuration) query.append('duration', selectedDuration);
         
-        if (authUser?.role === 'client') {
+        if (authUser?.role === 'client' && viewMode === 'my-postings') {
           query.append('poster', authUser._id);
           query.append('status', 'all');
         }
@@ -69,7 +72,7 @@ export default function Jobs() {
           }
 
           let filteredData = targetJobs;
-          if (authUser?.role === 'client') {
+          if (authUser?.role === 'client' && viewMode === 'my-postings') {
             filteredData = targetJobs.filter(job => {
                const posterId = typeof job.poster === 'object' ? job.poster?._id : job.poster;
                return String(posterId) === String(authUser._id);
@@ -86,7 +89,7 @@ export default function Jobs() {
 
     const timer = setTimeout(fetchJobs, 300);
     return () => clearTimeout(timer);
-  }, [search, selectedCategory, sortBy, authUser, minBudget, maxBudget, selectedDuration, page]);
+  }, [search, selectedCategory, sortBy, authUser, minBudget, maxBudget, selectedDuration, page, viewMode]);
 
   const filtered = jobsData; // Already filtered/sorted by backend/effect
 
@@ -112,11 +115,30 @@ export default function Jobs() {
       <div className="da-grid-bg pt-32 pb-20 border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <h1 className="text-5xl font-medium tracking-tight text-daInfo-dark mb-4">
-            Browse Domains
+            {authUser?.role === 'client' && viewMode === 'my-postings' ? 'Your Posted Gigs' : 'Browse Domains'}
           </h1>
-          <p className="text-xl text-gray-600 mb-10 max-w-2xl">
-            Find the perfect micro-task that matches your expertise.
+          <p className="text-xl text-gray-600 mb-8 max-w-2xl">
+            {authUser?.role === 'client' && viewMode === 'my-postings' 
+              ? 'Manage and track your active job postings and applicants.' 
+              : 'Find the perfect micro-task that matches your expertise.'}
           </p>
+
+          {authUser?.role === 'client' && (
+            <div className="flex gap-3 mb-6">
+              <button 
+                onClick={() => { setViewMode('my-postings'); setPage(1); }} 
+                className={`px-5 py-3 text-xs font-bold uppercase tracking-widest border-2 transition-all ${viewMode === 'my-postings' ? 'bg-daInfo-dark text-white border-daInfo-dark' : 'bg-white text-gray-600 border-gray-200 hover:border-gray-400'}`}
+              >
+                YOUR POSTINGS
+              </button>
+              <button 
+                onClick={() => { setViewMode('all-gigs'); setPage(1); }} 
+                className={`px-5 py-3 text-xs font-bold uppercase tracking-widest border-2 transition-all ${viewMode === 'all-gigs' ? 'bg-daInfo-dark text-white border-daInfo-dark' : 'bg-white text-gray-600 border-gray-200 hover:border-gray-400'}`}
+              >
+                BROWSE ALL PLATFORM GIGS
+              </button>
+            </div>
+          )}
 
           <div className="flex flex-col md:flex-row gap-4 mb-4">
             <div className="flex-1 relative">
@@ -317,10 +339,29 @@ export default function Jobs() {
         )}
 
         {filtered.length === 0 && (
-          <div className="text-center py-32 border-2 border-dashed border-gray-200">
-            <Search className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-xl font-bold text-daInfo-dark mb-2">No matching gigs</h3>
-            <p className="text-gray-500">Try adjusting your filters or search terms.</p>
+          <div className="text-center py-20 px-6 border-2 border-dashed border-gray-200 max-w-xl mx-auto bg-gray-50/50">
+            <Briefcase className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-2xl font-bold text-daInfo-dark mb-2">
+              {authUser?.role === 'client' && viewMode === 'my-postings' ? 'No posted gigs found' : 'No matching gigs'}
+            </h3>
+            <p className="text-gray-600 text-sm mb-8 font-medium">
+              {authUser?.role === 'client' && viewMode === 'my-postings'
+                ? "You haven't posted any gigs yet under this account, or no gigs match your filters. Post a new gig to hire top specialists or browse all platform gigs."
+                : 'Try adjusting your filters or search terms.'}
+            </p>
+            {authUser?.role === 'client' && viewMode === 'my-postings' && (
+              <div className="flex flex-col sm:flex-row justify-center gap-4">
+                <button onClick={() => navigate('/jobs/new')} className="da-btn-primary text-xs justify-center py-4 px-6">
+                  + POST A NEW GIG
+                </button>
+                <button 
+                  onClick={() => setViewMode('all-gigs')} 
+                  className="da-btn-outline text-xs justify-center py-4 px-6"
+                >
+                  BROWSE ALL GIGS
+                </button>
+              </div>
+            )}
           </div>
         )}
         
