@@ -11,4 +11,32 @@ export default defineConfig({
       },
     },
   },
+  esbuild: {
+    drop: ['console', 'debugger'],
+  },
+  build: {
+    target: 'esnext',
+    minify: 'esbuild',
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules')) {
+            if (id.includes('react') || id.includes('react-dom') || id.includes('react-router-dom')) {
+              return 'vendor-react';
+            }
+            if (id.includes('framer-motion')) {
+              return 'vendor-framer';
+            }
+            if (id.includes('recharts')) {
+              return 'vendor-recharts';
+            }
+            if (id.includes('lucide-react')) {
+              return 'vendor-icons';
+            }
+            return 'vendor-others';
+          }
+        },
+      },
+    },
+  },
 })

@@ -78,6 +78,7 @@ export default function Navbar() {
           {/* Mobile Toggle */}
           <button
             onClick={() => setIsMobileOpen(!isMobileOpen)}
+            aria-label="Toggle navigation menu"
             className="lg:hidden p-2 text-daInfo-dark"
           >
             {isMobileOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
@@ -169,6 +170,7 @@ export default function Navbar() {
             {/* Close helper */}
             <button 
               onClick={() => setIsMobileOpen(false)}
+              aria-label="Close navigation menu"
               className="absolute top-5 right-5 p-3 border-2 border-black"
             >
               <X className="w-8 h-8" />

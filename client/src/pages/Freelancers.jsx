@@ -252,7 +252,7 @@ export default function Freelancers() {
                     </div>
                   </div>
                 </div>
-                <button onClick={() => setSelectedFreelancer(null)} className="absolute top-4 right-4 md:static p-2 border border-transparent hover:border-gray-200 text-gray-400 hover:text-daInfo-dark hover:bg-gray-50 transition-all bg-white">
+                <button onClick={() => setSelectedFreelancer(null)} aria-label="Close freelancer details modal" className="absolute top-4 right-4 md:static p-2 border border-transparent hover:border-gray-200 text-gray-400 hover:text-daInfo-dark hover:bg-gray-50 transition-all bg-white">
                   <X className="w-6 h-6" />
                 </button>
               </div>

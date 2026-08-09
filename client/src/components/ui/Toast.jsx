@@ -80,6 +80,7 @@ function ToastContainer({ toasts, removeToast }) {
           <p className="text-sm font-medium text-gray-800 leading-snug flex-1">{t.message}</p>
           <button
             onClick={() => removeToast(t.id)}
+            aria-label="Close notification"
             className="text-gray-400 hover:text-gray-700 transition-colors flex-shrink-0 mt-0.5"
           >
             <X className="w-4 h-4" />

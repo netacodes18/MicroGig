@@ -334,7 +334,7 @@ export default function Jobs() {
                   </div>
                   <h2 className="text-3xl font-bold text-daInfo-dark tracking-tight leading-tight">{selectedJob.title}</h2>
                 </div>
-                <button onClick={() => setSelectedJob(null)} className="absolute top-4 right-4 md:static p-2 border border-transparent hover:border-gray-200 text-gray-400 hover:text-daInfo-dark hover:bg-gray-50 transition-all bg-white">
+                <button onClick={() => setSelectedJob(null)} aria-label="Close job details modal" className="absolute top-4 right-4 md:static p-2 border border-transparent hover:border-gray-200 text-gray-400 hover:text-daInfo-dark hover:bg-gray-50 transition-all bg-white">
                   <X className="w-6 h-6" />
                 </button>
               </div>

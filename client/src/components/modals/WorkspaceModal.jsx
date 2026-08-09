@@ -179,6 +179,7 @@ export default function WorkspaceModal({ jobId, userRole, onClose, onRefresh, ha
            </div>
            <button 
              onClick={onClose}
+             aria-label="Close workspace modal"
              className="p-2 bg-gray-50 text-gray-400 hover:text-gray-650 hover:bg-gray-100 rounded-xl transition-all duration-205"
            >
               <X className="w-4 h-4" />
@@ -392,6 +393,7 @@ export default function WorkspaceModal({ jobId, userRole, onClose, onRefresh, ha
                  <button 
                    type="submit"
                    disabled={submitting}
+                   aria-label="Send workspace message"
                    className="p-3.5 bg-daInfo-dark hover:bg-black text-white rounded-xl transition-all duration-200 hover:-translate-y-0.5 flex items-center justify-center"
                  >
                     <Send className="w-4 h-4" />

@@ -72,6 +72,7 @@ export default function NotificationCenter() {
     <div className="relative">
       <Link 
         to="/notifications"
+        aria-label="View notifications"
         className="relative p-2 border-2 border-transparent hover:border-black transition-all flex items-center"
       >
         <Bell className="w-5 h-5 text-gray-500 hover:text-black transition-colors" />
