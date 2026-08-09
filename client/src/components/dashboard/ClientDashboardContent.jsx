@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Briefcase, User, Activity, Clock, FileText, ExternalLink, DollarSign } from 'lucide-react';
 
-export default function ClientDashboardContent({ data, formatDate, actionLoading, handleAccept, handlePay, handleReject, handleHire, setWorkViewModal, setReviewModal, setWorkspaceModal }) {
+export default function ClientDashboardContent({ data, formatDate, actionLoading, handleAccept, handlePay, handleReject, handleHire, setWorkViewModal, setReviewModal, setWorkspaceModal, setManageGigModal }) {
   const { postedJobs, clientStats } = data;
   const [activeTab, setActiveTab] = useState('posted-jobs');
 
@@ -25,8 +25,8 @@ export default function ClientDashboardContent({ data, formatDate, actionLoading
     }) || [];
   };
 
-  // 1. Posted Gigs Tab (OPEN or APPLICATION_RECEIVED)
-  const postedGigs = getJobsByStatus(['OPEN', 'APPLICATION_RECEIVED']);
+  // 1. Posted Gigs Tab - All jobs posted by this employer
+  const postedGigs = postedJobs || [];
 
   // 2. Applicants Tab
   const allApplicants = [];
@@ -142,17 +142,19 @@ export default function ClientDashboardContent({ data, formatDate, actionLoading
                 </div>
                 <div className="flex flex-wrap gap-2">
                   <button
-                    onClick={() => setActiveTab('applicants')}
-                    className="bg-white hover:bg-gray-50 text-gray-700 border border-gray-200 text-[10px] font-bold uppercase tracking-widest px-4 py-2.5 rounded-xl transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm"
+                    onClick={() => setManageGigModal({ shown: true, jobId: job._id })}
+                    className="bg-black hover:bg-gray-800 text-white text-[10px] font-bold uppercase tracking-widest px-4 py-2.5 rounded-xl transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm"
                   >
-                    VIEW APPLICANTS ({job.applicants?.length || 0})
+                    MANAGE GIG ({job.applicants?.length || 0} APPLICANTS)
                   </button>
-                  <button
-                    onClick={() => setWorkspaceModal({ shown: true, jobId: job._id })}
-                    className="bg-daInfo-dark hover:bg-black text-white text-[10px] font-bold uppercase tracking-widest px-4 py-2.5 rounded-xl transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm"
-                  >
-                    OPEN WORKSPACE
-                  </button>
+                  {['HIRED', 'IN_PROGRESS', 'WORK_SUBMITTED', 'UNDER_REVIEW', 'APPROVED', 'COMPLETED'].includes((job.status || '').toUpperCase()) && (
+                    <button
+                      onClick={() => setWorkspaceModal({ shown: true, jobId: job._id })}
+                      className="bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-bold uppercase tracking-widest px-4 py-2.5 rounded-xl transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm"
+                    >
+                      OPEN WORKSPACE
+                    </button>
+                  )}
                 </div>
               </div>
             ))

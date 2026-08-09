@@ -16,6 +16,7 @@ import ReviewModal from '../components/modals/ReviewModal';
 import WorkViewModal from '../components/modals/WorkViewModal';
 import PaymentModal from '../components/modals/PaymentModal';
 import WorkspaceModal from '../components/modals/WorkspaceModal';
+import ManageGigModal from '../components/modals/ManageGigModal';
 
 export default function Dashboard() {
   const { user, loading: authLoading } = useAuth();
@@ -28,6 +29,7 @@ export default function Dashboard() {
   const [workViewModal, setWorkViewModal] = useState({ shown: false, submission: null, title: '' });
   const [paymentModal, setPaymentModal] = useState({ shown: false, jobId: null, freelancerId: null, title: '' });
   const [workspaceModal, setWorkspaceModal] = useState({ shown: false, jobId: null });
+  const [manageGigModal, setManageGigModal] = useState({ shown: false, jobId: null });
   const [actionLoading, setActionLoading] = useState(false);
 
   // Load Razorpay Script
@@ -50,15 +52,11 @@ export default function Dashboard() {
         const { data: json } = await api.get('/users/me/dashboard');
         setData(json);
 
-        // Check URL params for target jobId
+        // Check URL params for target jobId to open ManageGigModal
         const params = new URLSearchParams(window.location.search);
-        const targetJobId = params.get('jobId');
-        if (targetJobId && json.postedJobs) {
-          const matchingJob = json.postedJobs.find(j => String(j._id) === String(targetJobId));
-          const statusUpper = matchingJob ? (matchingJob.status || '').toUpperCase() : '';
-          if (matchingJob && ['HIRED', 'IN_PROGRESS', 'WORK_SUBMITTED', 'UNDER_REVIEW', 'APPROVED', 'COMPLETED'].includes(statusUpper)) {
-            setWorkspaceModal({ shown: true, jobId: targetJobId });
-          }
+        const targetJobId = params.get('jobId') || params.get('manageId');
+        if (targetJobId) {
+          setManageGigModal({ shown: true, jobId: targetJobId });
         }
       } catch (err) {
         toast.error('Failed to load dashboard data.');
@@ -253,7 +251,8 @@ export default function Dashboard() {
     setReviewModal,
     setWorkViewModal,
     handleReviewClient,
-    setWorkspaceModal
+    setWorkspaceModal,
+    setManageGigModal
   };
 
   return (
@@ -371,6 +370,14 @@ export default function Dashboard() {
           jobId={workspaceModal.jobId}
           userRole={user.role}
           onClose={() => setWorkspaceModal({ shown: false, jobId: null })}
+          onRefresh={() => window.location.reload()}
+          handlePay={handlePay}
+        />
+      )}
+      {manageGigModal.shown && (
+        <ManageGigModal 
+          jobId={manageGigModal.jobId}
+          onClose={() => setManageGigModal({ shown: false, jobId: null })}
           onRefresh={() => window.location.reload()}
           handlePay={handlePay}
         />
