@@ -56,6 +56,8 @@ export default function Dashboard() {
         const params = new URLSearchParams(window.location.search);
         const targetJobId = params.get('jobId') || params.get('manageId');
         if (targetJobId) {
+          // Clear query param so URL doesn't trigger continuous loop re-renders
+          window.history.replaceState({}, document.title, window.location.pathname);
           setManageGigModal({ shown: true, jobId: targetJobId });
         }
       } catch (err) {
@@ -383,8 +385,9 @@ export default function Dashboard() {
       {manageGigModal.shown && (
         <ManageGigModal 
           jobId={manageGigModal.jobId}
+          initialJob={data?.postedJobs?.find(j => String(j._id) === String(manageGigModal.jobId))}
           onClose={() => setManageGigModal({ shown: false, jobId: null })}
-          onRefresh={() => window.location.reload()}
+          onRefresh={() => fetchDashboard()}
           handlePay={handlePay}
         />
       )}

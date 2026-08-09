@@ -3,9 +3,9 @@ import { Briefcase, User, Clock, FileText, CheckCircle, ExternalLink, X, DollarS
 import { useToast } from '../ui/Toast';
 import api from '../../lib/api';
 
-export default function ManageGigModal({ jobId, onClose, onRefresh, handlePay }) {
-  const [job, setJob] = useState(null);
-  const [loading, setLoading] = useState(true);
+export default function ManageGigModal({ jobId, initialJob, onClose, onRefresh, handlePay }) {
+  const [job, setJob] = useState(initialJob || null);
+  const [loading, setLoading] = useState(!initialJob);
   const [activeTab, setActiveTab] = useState('applicants'); // 'applicants' | 'workspace' | 'details'
   const [actionLoading, setActionLoading] = useState(false);
   const toast = useToast();
@@ -24,10 +24,13 @@ export default function ManageGigModal({ jobId, onClose, onRefresh, handlePay })
   };
 
   useEffect(() => {
-    if (jobId) {
+    if (initialJob) {
+      setJob(initialJob);
+      setLoading(false);
+    } else if (jobId) {
       fetchJob();
     }
-  }, [jobId]);
+  }, [jobId, initialJob]);
 
   const handleHire = async (freelancerId) => {
     setActionLoading(true);
