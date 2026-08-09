@@ -90,7 +90,9 @@ exports.getDashboard = async (req, res, next) => {
     if (!user) return res.status(404).json({ message: 'User not found' });
 
     if (user.role === 'client') {
-      const myJobs = await Job.find({ poster: user._id }).populate('applicants.user', 'name avatar rating skills').sort({ createdAt: -1 });
+      const myJobs = await Job.find({ poster: { $in: [user._id, user._id.toString()] } })
+        .populate('applicants.user', 'name avatar rating skills')
+        .sort({ createdAt: -1 });
 
       let peopleHired = 0;
       let openOpenings = 0;
@@ -103,26 +105,28 @@ exports.getDashboard = async (req, res, next) => {
           peopleHired++;
         }
 
+        const safeApplicants = Array.isArray(job.applicants) ? job.applicants : [];
+
         postedJobs.push({
           _id: job._id,
-          title: job.title,
-          status: job.status,
+          title: job.title || 'Untitled Gig',
+          status: job.status || 'OPEN',
           createdAt: job.createdAt,
           budget: job.budget,
           assignedTo: job.assignedTo,
-          applicants: job.applicants.map(a => ({
-            id: a.user?._id,
-            name: a.user?.name,
-            avatar: a.user?.avatar,
-            rating: a.user?.rating,
+          applicants: safeApplicants.map(a => ({
+            id: a.user?._id || a.user,
+            name: a.user?.name || 'Applicant',
+            avatar: a.user?.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${a.user?._id || 'user'}`,
+            rating: a.user?.rating || 5,
             skills: a.user?.skills || [],
-            message: a.message,
-            experience: a.experience,
-            contactInfo: a.contactInfo,
-            attachmentUrl: a.attachmentUrl,
-            attachmentName: a.attachmentName,
-            appliedAt: a.appliedAt,
-            vibeMatch: a.vibeMatch
+            message: a.message || '',
+            experience: a.experience || '',
+            contactInfo: a.contactInfo || '',
+            attachmentUrl: a.attachmentUrl || '',
+            attachmentName: a.attachmentName || '',
+            appliedAt: a.appliedAt || job.createdAt,
+            vibeMatch: a.vibeMatch || 0
           }))
         });
       });
