@@ -145,8 +145,7 @@ export default function Home() {
           setTestimonials(padded.slice(0, 3));
         }
       } catch (err) {
-        console.error('Failed to fetch home data:', err);
-        // Fallbacks are already set in initial state
+        // Fallback default state handles errors gracefully
       } finally {
         setLoading(false);
       }
