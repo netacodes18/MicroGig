@@ -55,10 +55,12 @@ export default function Jobs() {
         if (authUser?.role === 'client' && viewMode === 'my-postings') {
           query.append('poster', authUser._id);
           query.append('status', 'all');
+          query.append('limit', 50);
+        } else {
+          query.append('limit', 12);
         }
 
         query.append('page', page);
-        query.append('limit', 12);
         
         const res = await fetch(`/api/jobs?${query.toString()}`);
         if (res.ok) {
@@ -71,14 +73,7 @@ export default function Jobs() {
              setTotalPages(1);
           }
 
-          let filteredData = targetJobs;
-          if (authUser?.role === 'client' && viewMode === 'my-postings') {
-            filteredData = targetJobs.filter(job => {
-               const posterId = typeof job.poster === 'object' ? job.poster?._id : job.poster;
-               return String(posterId) === String(authUser._id);
-            });
-          }
-          setJobsData(filteredData);
+          setJobsData(Array.isArray(targetJobs) ? targetJobs : []);
         }
       } catch (err) {
         console.error('Failed to fetch jobs:', err);

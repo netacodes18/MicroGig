@@ -17,7 +17,7 @@ exports.getJobs = async (req, res, next) => {
     if (poster) {
       const mongoose = require('mongoose');
       if (mongoose.Types.ObjectId.isValid(poster)) {
-        query.poster = new mongoose.Types.ObjectId(poster);
+        query.poster = { $in: [poster, new mongoose.Types.ObjectId(poster)] };
       } else {
         query.poster = poster;
       }
@@ -36,7 +36,7 @@ exports.getJobs = async (req, res, next) => {
     if (maxBudget) query['budget.max'] = { ...query['budget.max'], $lte: Number(maxBudget) };
     if (duration) query.duration = { $regex: duration, $options: 'i' };
 
-    const parsedLimit = parseInt(limit, 10);
+    const parsedLimit = poster ? parseInt(limit || 50, 10) : parseInt(limit, 10);
     const parsedPage = parseInt(page, 10);
     const skip = (parsedPage - 1) * parsedLimit;
 
