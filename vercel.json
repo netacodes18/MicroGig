@@ -26,7 +26,31 @@
       "destination": "https://microgig-1.onrender.com/api/$1"
     },
     {
-      "source": "/((?!api/|robots\\.txt|sitemap\\.xml|.*\\.[a-zA-Z0-9]+$).*)",
+      "source": "/robots.txt",
+      "destination": "/robots.txt"
+    },
+    {
+      "source": "/sitemap.xml",
+      "destination": "/sitemap.xml"
+    },
+    {
+      "source": "/favicon.png",
+      "destination": "/favicon.png"
+    },
+    {
+      "source": "/favicon.svg",
+      "destination": "/favicon.svg"
+    },
+    {
+      "source": "/icons.svg",
+      "destination": "/icons.svg"
+    },
+    {
+      "source": "/assets/(.*)",
+      "destination": "/assets/$1"
+    },
+    {
+      "source": "/(.*)",
       "destination": "/index.html"
     }
   ]
