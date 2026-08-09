@@ -97,8 +97,9 @@ exports.getDashboard = async (req, res, next) => {
       const postedJobs = [];
 
       myJobs.forEach(job => {
-        if (job.status === 'open') openOpenings++;
-        if ((job.status === 'in-progress' || job.status === 'completed') && job.assignedTo) {
+        const statusUpper = (job.status || '').toUpperCase();
+        if (statusUpper === 'OPEN' || statusUpper === 'APPLICATION_RECEIVED') openOpenings++;
+        if (['HIRED', 'IN_PROGRESS', 'WORK_SUBMITTED', 'UNDER_REVIEW', 'REVISION_REQUESTED', 'APPROVED', 'COMPLETED'].includes(statusUpper) && job.assignedTo) {
           peopleHired++;
         }
 

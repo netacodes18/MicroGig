@@ -48,6 +48,12 @@ export default function Jobs() {
         if (minBudget) query.append('minBudget', minBudget);
         if (maxBudget) query.append('maxBudget', maxBudget);
         if (selectedDuration) query.append('duration', selectedDuration);
+        
+        if (authUser?.role === 'client') {
+          query.append('poster', authUser._id);
+          query.append('status', 'all');
+        }
+
         query.append('page', page);
         query.append('limit', 12);
         
@@ -65,8 +71,8 @@ export default function Jobs() {
           let filteredData = targetJobs;
           if (authUser?.role === 'client') {
             filteredData = targetJobs.filter(job => {
-               const posterId = typeof job.poster === 'object' ? job.poster._id : job.poster;
-               return posterId === authUser._id;
+               const posterId = typeof job.poster === 'object' ? job.poster?._id : job.poster;
+               return String(posterId) === String(authUser._id);
             });
           }
           setJobsData(filteredData);

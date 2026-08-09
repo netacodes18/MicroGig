@@ -9,13 +9,19 @@ const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
 // GET /api/jobs
 exports.getJobs = async (req, res, next) => {
   try {
-    const { category, skill, status, search, sort, minBudget, maxBudget, duration, page = 1, limit = 12 } = req.query;
+    const { category, skill, status, search, sort, minBudget, maxBudget, duration, poster, page = 1, limit = 12 } = req.query;
     let query = {};
 
     if (category) query.category = category;
     if (skill) query.skills = { $in: skill.split(',') };
-    if (status) query.status = status;
-    else query.status = 'open';
+    if (poster) query.poster = poster;
+
+    if (status && status !== 'all') {
+      query.status = { $regex: `^${status}$`, $options: 'i' };
+    } else if (!status && !poster) {
+      query.status = { $regex: '^(OPEN|open|APPLICATION_RECEIVED)$', $options: 'i' };
+    }
+    
     if (search) query.title = { $regex: search, $options: 'i' };
     
     // Advanced Filters
