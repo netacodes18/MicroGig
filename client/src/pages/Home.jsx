@@ -6,8 +6,8 @@ import { ArrowRight, Globe, Clock, Zap, CreditCard, Users, Star, ChevronRight } 
 // Custom Animated Freelancer SVG Scene - Optimized with CSS Animations
 const FreelancerAnimation = () => {
   return (
-    <div className="w-full h-full bg-[#f4b41a] flex items-center justify-center relative overflow-hidden">
-      <svg viewBox="0 0 800 600" className="w-full h-full min-w-[400px] transform scale-100 sm:scale-95">
+    <div className="w-full h-full bg-[#f4b41a] flex items-center justify-center relative overflow-hidden min-h-[360px]">
+      <svg viewBox="0 0 800 600" preserveAspectRatio="xMidYMid meet" className="w-full h-full min-w-[400px] transform scale-100 sm:scale-95">
         {/* Floor shadow */}
         <ellipse cx="400" cy="550" rx="200" ry="15" fill="rgba(0,0,0,0.1)" />
 
@@ -365,7 +365,7 @@ export default function Home() {
             initial={{ opacity: 0, x: 30 }}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
-            className="flex-1 w-full bg-gray-50 flex items-center justify-center aspect-[4/3] overflow-hidden border border-gray-200 da-shadow-black"
+            className="flex-1 w-full bg-gray-50 flex items-center justify-center aspect-[4/3] min-h-[360px] overflow-hidden border border-gray-200 da-shadow-black"
           >
             <FreelancerAnimation />
           </motion.div>

@@ -17,10 +17,10 @@
   "rewrites": [
     {
       "source": "/api/(.*)",
-      "destination": "https://microgig-api.onrender.com/api/$1"
+      "destination": "https://microgig-1.onrender.com/api/$1"
     },
     {
-      "source": "/(.*)",
+      "source": "/((?!api/|robots\\.txt|sitemap\\.xml|.*\\.[a-zA-Z0-9]+$).*)",
       "destination": "/index.html"
     }
   ]
