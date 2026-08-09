@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { 
   Briefcase, Activity, CheckCircle, 
@@ -32,6 +32,7 @@ export default function Dashboard() {
   const [workspaceModal, setWorkspaceModal] = useState({ shown: false, jobId: null });
   const [manageGigModal, setManageGigModal] = useState({ shown: false, jobId: null });
   const [actionLoading, setActionLoading] = useState(false);
+  const manageJobConsumed = useRef(false);
 
   // Load Razorpay Script
   const loadRazorpay = () => {
@@ -45,37 +46,41 @@ export default function Dashboard() {
     });
   };
 
-  useEffect(() => {
-    if (!user) return; // wait for user
-    
-    const fetchDashboard = async () => {
-      try {
-        const { data: json } = await api.get('/users/me/dashboard');
-        setData(json);
+  // Extracted so it can be called from ManageGigModal's onRefresh
+  const fetchDashboard = useCallback(async () => {
+    if (!user) return;
+    try {
+      const { data: json } = await api.get('/users/me/dashboard');
+      setData(json);
+    } catch (err) {
+      console.error('Failed to load dashboard data:', err);
+      setData({
+        profile: user,
+        clientStats: { openOpenings: 0, peopleHired: 0 },
+        postedJobs: [],
+        recruitmentHistory: []
+      });
+    } finally {
+      setLoading(false);
+    }
+  }, [user]);
 
-        // Check location state or URL params for target jobId to open ManageGigModal
-        const params = new URLSearchParams(location.search);
-        const targetJobId = location.state?.manageJobId || params.get('jobId') || params.get('manageId');
-        if (targetJobId) {
-          // Clear location state / query param so URL doesn't trigger continuous re-renders
-          window.history.replaceState({}, document.title, window.location.pathname);
-          setManageGigModal({ shown: true, jobId: targetJobId });
-        }
-      } catch (err) {
-        console.error('Failed to load dashboard data:', err);
-        // Fallback data ensures page NEVER gets stuck on loading spinner
-        setData({
-          profile: user,
-          clientStats: { openOpenings: 0, peopleHired: 0 },
-          postedJobs: [],
-          recruitmentHistory: []
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
+  useEffect(() => {
+    if (!user) return;
     fetchDashboard();
-  }, [user, location.search, location.state]);
+  }, [user, fetchDashboard]);
+
+  // Separate effect: consume manageJobId from location.state exactly once
+  useEffect(() => {
+    if (manageJobConsumed.current) return;
+    const targetJobId = location.state?.manageJobId;
+    if (targetJobId) {
+      manageJobConsumed.current = true;
+      // Clear the state from router so back/forward doesn't re-trigger
+      navigate('/dashboard', { replace: true, state: {} });
+      setManageGigModal({ shown: true, jobId: targetJobId });
+    }
+  }, [location.state, navigate]);
 
   const handleSubmitWork = async () => {
     setActionLoading(true);
@@ -388,7 +393,7 @@ export default function Dashboard() {
           jobId={manageGigModal.jobId}
           initialJob={data?.postedJobs?.find(j => String(j._id) === String(manageGigModal.jobId))}
           onClose={() => setManageGigModal({ shown: false, jobId: null })}
-          onRefresh={() => fetchDashboard()}
+          onRefresh={fetchDashboard}
           handlePay={handlePay}
         />
       )}
