@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { 
   Briefcase, Activity, CheckCircle, 
   Settings as SettingsIcon, Calendar,
@@ -21,6 +21,7 @@ import ManageGigModal from '../components/modals/ManageGigModal';
 export default function Dashboard() {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const toast = useToast();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -52,11 +53,11 @@ export default function Dashboard() {
         const { data: json } = await api.get('/users/me/dashboard');
         setData(json);
 
-        // Check URL params for target jobId to open ManageGigModal
-        const params = new URLSearchParams(window.location.search);
-        const targetJobId = params.get('jobId') || params.get('manageId');
+        // Check location state or URL params for target jobId to open ManageGigModal
+        const params = new URLSearchParams(location.search);
+        const targetJobId = location.state?.manageJobId || params.get('jobId') || params.get('manageId');
         if (targetJobId) {
-          // Clear query param so URL doesn't trigger continuous loop re-renders
+          // Clear location state / query param so URL doesn't trigger continuous re-renders
           window.history.replaceState({}, document.title, window.location.pathname);
           setManageGigModal({ shown: true, jobId: targetJobId });
         }
@@ -74,7 +75,7 @@ export default function Dashboard() {
       }
     };
     fetchDashboard();
-  }, [user]);
+  }, [user, location.search, location.state]);
 
   const handleSubmitWork = async () => {
     setActionLoading(true);

@@ -452,7 +452,7 @@ export default function Jobs() {
                                onClick={() => {
                                  const targetJobId = selectedJob._id;
                                  setSelectedJob(null);
-                                 navigate(`/dashboard?jobId=${targetJobId}`);
+                                 navigate('/dashboard', { state: { manageJobId: targetJobId } });
                                }} 
                                className="w-full relative inline-flex items-center justify-center gap-3 px-6 py-5 text-sm font-bold text-white uppercase tracking-widest bg-daInfo-dark hover:bg-black transition-all group shadow-sm"
                              >

@@ -183,24 +183,30 @@ export default function ManageGigModal({ jobId, initialJob, onClose, onRefresh, 
               ) : (
                 <div className="space-y-6">
                   {applicants.map((app, idx) => {
-                    const candidate = typeof app.user === 'object' ? app.user : { _id: app.user, name: 'Freelancer' };
+                    if (!app) return null;
+
+                    const candidateId = app.user?._id || app.user?.id || (typeof app.user === 'string' ? app.user : null) || app.id || app._id;
+                    const candidateName = app.user?.name || app.name || 'Freelancer';
+                    const candidateAvatar = app.user?.avatar || app.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${candidateName}`;
+                    const candidateRating = app.user?.rating || app.rating || 5;
+
                     const isPending = !app.status || app.status.toUpperCase() === 'PENDING';
-                    const isHired = app.status?.toUpperCase() === 'HIRED' || String(job.assignedTo) === String(candidate._id);
+                    const isHired = app.status?.toUpperCase() === 'HIRED' || (job.assignedTo && String(job.assignedTo) === String(candidateId));
 
                     return (
                       <div key={idx} className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm space-y-4">
                         <div className="flex items-start justify-between gap-4">
                           <div className="flex items-center gap-4">
                             <img 
-                              src={candidate.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${candidate.name || 'User'}`} 
+                              src={candidateAvatar} 
                               alt="" 
                               className="w-12 h-12 rounded-xl object-cover border border-gray-200 bg-gray-50" 
                             />
                             <div>
-                              <h4 className="font-bold text-lg text-daInfo-dark">{candidate.name}</h4>
+                              <h4 className="font-bold text-lg text-daInfo-dark">{candidateName}</h4>
                               <div className="flex items-center gap-2 mt-1">
                                 <span className="text-[10px] font-bold bg-amber-50 text-amber-700 px-2 py-0.5 rounded border border-amber-200">
-                                  ★ {candidate.rating || '4.8'}
+                                  ★ {candidateRating}
                                 </span>
                                 {app.vibeMatch > 0 && (
                                   <span className="text-[10px] font-bold bg-purple-50 text-purple-700 px-2 py-0.5 rounded border border-purple-200">
@@ -237,17 +243,17 @@ export default function ManageGigModal({ jobId, initialJob, onClose, onRefresh, 
                             Bid Amount: <strong className="text-gray-900">${app.bidAmount || job.budget?.max}</strong> | Delivery: <strong className="text-gray-900">{app.deliveryTime || job.duration}</strong>
                           </div>
 
-                          {isPending && !isAssigned && (
+                          {isPending && !isAssigned && candidateId && (
                             <div className="flex gap-2">
                               <button
-                                onClick={() => handleHire(candidate._id)}
+                                onClick={() => handleHire(candidateId)}
                                 disabled={actionLoading}
                                 className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold uppercase tracking-widest px-5 py-2.5 rounded-xl transition-all disabled:opacity-50"
                               >
                                 HIRE
                               </button>
                               <button
-                                onClick={() => handleReject(candidate._id)}
+                                onClick={() => handleReject(candidateId)}
                                 disabled={actionLoading}
                                 className="bg-gray-100 hover:bg-red-50 text-gray-600 hover:text-red-600 text-xs font-bold uppercase tracking-widest px-4 py-2.5 rounded-xl transition-all disabled:opacity-50"
                               >
