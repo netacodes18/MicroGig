@@ -70,6 +70,11 @@ export default function Dashboard() {
     fetchDashboard();
   }, [user, fetchDashboard]);
 
+  // Force-reset body overflow on mount — Jobs page may leave it as 'hidden'
+  useEffect(() => {
+    document.body.style.overflow = 'unset';
+  }, []);
+
   // Separate effect: consume manageJobId from location.state exactly once
   useEffect(() => {
     if (manageJobConsumed.current) return;
