@@ -49,6 +49,13 @@ export default function Dashboard() {
       try {
         const { data: json } = await api.get('/users/me/dashboard');
         setData(json);
+
+        // Check URL params for target jobId to open WorkspaceModal directly
+        const params = new URLSearchParams(window.location.search);
+        const targetJobId = params.get('jobId');
+        if (targetJobId) {
+          setWorkspaceModal({ shown: true, jobId: targetJobId });
+        }
       } catch (err) {
         toast.error('Failed to load dashboard data.');
         console.error(err);

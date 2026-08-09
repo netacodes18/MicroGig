@@ -5,6 +5,18 @@ export default function ClientDashboardContent({ data, formatDate, actionLoading
   const { postedJobs, clientStats } = data;
   const [activeTab, setActiveTab] = useState('posted-jobs');
 
+  // Helper to safely format budget across all budget structures
+  const formatBudget = (budget) => {
+    if (!budget) return '₹0';
+    if (typeof budget === 'number') return `₹${budget}`;
+    if (typeof budget === 'object') {
+      if (budget.min && budget.max) return `₹${budget.min} - ₹${budget.max}`;
+      if (budget.max) return `₹${budget.max}`;
+      if (budget.min) return `₹${budget.min}`;
+    }
+    return '₹0';
+  };
+
   // Helper to map and sanitize jobs by status categories
   const getJobsByStatus = (statuses) => {
     return postedJobs?.filter(job => {
@@ -122,18 +134,26 @@ export default function ClientDashboardContent({ data, formatDate, actionLoading
                 <div>
                   <h4 className="font-bold text-daInfo-dark text-lg leading-tight tracking-tight">{job.title}</h4>
                   <div className="flex flex-wrap gap-4 mt-2.5 text-xs font-semibold tracking-wider text-gray-500">
-                    <span>Budget: <span className="text-gray-900 font-bold">₹{job.budget?.min} - ₹{job.budget?.max}</span></span>
+                    <span>Budget: <span className="text-gray-900 font-bold">{formatBudget(job.budget)}</span></span>
                     <span>Applicants: <span className="text-gray-900 font-bold">{job.applicants?.length || 0}</span></span>
                     <span>Status: <span className="text-yellow-700 bg-yellow-50 px-2.5 py-0.5 rounded-lg border border-yellow-100 uppercase font-bold text-[10px]">{job.status}</span></span>
                     <span>Posted: {formatDate(job.createdAt)}</span>
                   </div>
                 </div>
-                <button
-                  onClick={() => setActiveTab('applicants')}
-                  className="bg-white hover:bg-gray-50 text-gray-700 border border-gray-200 text-[10px] font-bold uppercase tracking-widest px-4 py-2.5 rounded-xl transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm"
-                >
-                  VIEW APPLICANTS
-                </button>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    onClick={() => setActiveTab('applicants')}
+                    className="bg-white hover:bg-gray-50 text-gray-700 border border-gray-200 text-[10px] font-bold uppercase tracking-widest px-4 py-2.5 rounded-xl transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm"
+                  >
+                    VIEW APPLICANTS ({job.applicants?.length || 0})
+                  </button>
+                  <button
+                    onClick={() => setWorkspaceModal({ shown: true, jobId: job._id })}
+                    className="bg-daInfo-dark hover:bg-black text-white text-[10px] font-bold uppercase tracking-widest px-4 py-2.5 rounded-xl transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm"
+                  >
+                    OPEN WORKSPACE
+                  </button>
+                </div>
               </div>
             ))
           )}

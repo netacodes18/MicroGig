@@ -445,7 +445,7 @@ export default function Jobs() {
                           <button 
                             onClick={() => {
                               if (selectedJob.poster?._id === authUser?._id) {
-                                navigate('/dashboard');
+                                navigate(`/dashboard?jobId=${selectedJob._id}`);
                               } else {
                                 toast.warning('Employer accounts cannot apply for gigs.');
                               }
