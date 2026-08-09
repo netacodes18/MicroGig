@@ -458,8 +458,13 @@ export default function Jobs() {
                              <button 
                                onClick={() => {
                                  const targetJobId = selectedJob._id;
-                                 setManageGigModal({ shown: true, jobId: targetJobId });
                                  setSelectedJob(null);
+                                 document.body.style.overflow = 'unset';
+                                 if (isOwnJob) {
+                                   navigate(`/dashboard?manageId=${targetJobId}`);
+                                 } else {
+                                   navigate('/dashboard');
+                                 }
                                }} 
                                className="w-full relative inline-flex items-center justify-center gap-3 px-6 py-5 text-sm font-bold text-white uppercase tracking-widest bg-daInfo-dark hover:bg-black transition-all group shadow-sm"
                              >
@@ -664,13 +669,6 @@ export default function Jobs() {
             </div>
           </div>
         )}
-      {manageGigModal.shown && (
-        <ManageGigModal
-          jobId={manageGigModal.jobId}
-          onClose={() => setManageGigModal({ shown: false, jobId: null })}
-          onRefresh={() => {}}
-        />
-      )}
       </div>
     </div>
   );

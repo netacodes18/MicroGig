@@ -75,17 +75,22 @@ export default function Dashboard() {
     document.body.style.overflow = 'unset';
   }, []);
 
-  // Separate effect: consume manageJobId from location.state exactly once
+  // Separate effect: consume manageJobId from location.state or query params exactly once
   useEffect(() => {
     if (manageJobConsumed.current) return;
-    const targetJobId = location.state?.manageJobId;
+    const params = new URLSearchParams(location.search);
+    const targetJobId = location.state?.manageJobId || params.get('manageId') || params.get('jobId') || params.get('manageJobId');
     if (targetJobId) {
       manageJobConsumed.current = true;
-      // Clear the state from router so back/forward doesn't re-trigger
-      navigate('/dashboard', { replace: true, state: {} });
+      // Clear URL params without triggering router re-render
+      window.history.replaceState({}, document.title, window.location.pathname);
+      // Clear location state if any
+      if (location.state?.manageJobId) {
+        navigate('/dashboard', { replace: true, state: {} });
+      }
       setManageGigModal({ shown: true, jobId: targetJobId });
     }
-  }, [location.state, navigate]);
+  }, [location.state, location.search, navigate]);
 
   const handleSubmitWork = async () => {
     setActionLoading(true);
@@ -274,8 +279,25 @@ export default function Dashboard() {
     setManageGigModal
   };
 
+  const isAnyModalOpen = submissionModal.shown || reviewModal.shown || workViewModal.shown || paymentModal.shown || workspaceModal.shown || manageGigModal.shown;
+
   return (
     <div className="min-h-screen bg-white text-left">
+      {!isAnyModalOpen && (
+        <style>{`
+          body, html {
+            overflow: auto !important;
+            overflow-y: auto !important;
+          }
+        `}</style>
+      )}
+      {isAnyModalOpen && (
+        <style>{`
+          body, html {
+            overflow: hidden !important;
+          }
+        `}</style>
+      )}
       <div className="da-grid-bg pt-32 pb-20 border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">

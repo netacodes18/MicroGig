@@ -59,7 +59,12 @@ export default function Notifications() {
 
   const handleActionClick = (notif) => {
     if (!notif.isRead) markRead(notif._id);
-    navigate('/dashboard');
+    const jobId = notif.job?._id || notif.job;
+    if (jobId && (notif.type === 'apply' || notif.type === 'submission' || notif.type === 'acceptance')) {
+      navigate(`/dashboard?manageId=${jobId}`);
+    } else {
+      navigate('/dashboard');
+    }
   };
 
   const unreadCount = notifications.filter(n => !n.isRead).length;
