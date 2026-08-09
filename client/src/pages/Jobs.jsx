@@ -98,6 +98,10 @@ export default function Jobs() {
     } else {
       document.body.style.overflow = 'unset';
     }
+    // CRITICAL: Reset overflow when component unmounts (e.g. navigating away)
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
   }, [selectedJob, applyModal.shown]);
 
   const hasApplied = (job) => {

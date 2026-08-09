@@ -54,6 +54,9 @@ export default function Freelancers() {
     } else {
       document.body.style.overflow = 'unset';
     }
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
   }, [selectedFreelancer]);
 
   return (
