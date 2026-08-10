@@ -40,7 +40,13 @@ exports.login = async (req, res, next) => {
   try {
     const { email, password } = req.body;
     const user = await User.findOne({ email }).select('+password');
-    if (!user || !(await user.matchPassword(password))) {
+    if (!user) {
+      return res.status(401).json({ message: 'Invalid email or password' });
+    }
+    if (!user.password && user.googleId) {
+      return res.status(401).json({ message: 'This account was created with Google. Please use the "Continue with Google" button.' });
+    }
+    if (!(await user.matchPassword(password))) {
       return res.status(401).json({ message: 'Invalid email or password' });
     }
 
@@ -67,7 +73,10 @@ exports.login = async (req, res, next) => {
       token,
       user: { _id: user._id, name: user.name, email: user.email, role: user.role, avatar: user.avatar, skills: user.skills, rating: user.rating, completedGigs: user.completedGigs, totalEarnings: user.totalEarnings },
     });
-  } catch (err) { next(err); }
+  } catch (err) {
+    console.error('LOGIN ERROR:', err);
+    next(err);
+  }
 };
 
 // GET /api/auth/me

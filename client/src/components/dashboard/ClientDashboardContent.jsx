@@ -1,9 +1,35 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Briefcase, User, Activity, Clock, FileText, ExternalLink, DollarSign } from 'lucide-react';
 
 export default function ClientDashboardContent({ data, formatDate, actionLoading, handleAccept, handlePay, handleReject, handleHire, setWorkViewModal, setReviewModal, setWorkspaceModal, setManageGigModal }) {
   const { postedJobs, clientStats } = data;
   const [activeTab, setActiveTab] = useState('posted-jobs');
+  
+  const [invoices, setInvoices] = useState([]);
+  const [loadingInvoices, setLoadingInvoices] = useState(false);
+  const [invoiceStatus, setInvoiceStatus] = useState(null);
+
+  useEffect(() => {
+    fetchInvoices();
+  }, []);
+
+  const fetchInvoices = async () => {
+    setLoadingInvoices(true);
+    try {
+      const token = localStorage.getItem('microgig_token');
+      const res = await fetch('/api/payments/invoices', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const responseData = await res.json();
+        setInvoices(responseData.invoices || []);
+      }
+    } catch (err) {
+      console.error('Failed to fetch invoices:', err);
+    } finally {
+      setLoadingInvoices(false);
+    }
+  };
 
   // Helper to safely format budget across all budget structures
   const formatBudget = (budget) => {
@@ -60,7 +86,8 @@ export default function ClientDashboardContent({ data, formatDate, actionLoading
     { id: 'active-projects', label: 'Active Projects', count: activeProjects.length },
     { id: 'submitted-work', label: 'Submitted Work', count: submittedWork.length },
     { id: 'payments', label: 'Payments', count: payments.length },
-    { id: 'completed-projects', label: 'Completed', count: completedProjects.length }
+    { id: 'completed-projects', label: 'Completed', count: completedProjects.length },
+    { id: 'invoices', label: 'Invoices', count: invoices.length }
   ];
 
   return (
@@ -436,6 +463,87 @@ export default function ClientDashboardContent({ data, formatDate, actionLoading
               </div>
             ))
           )}
+        </div>
+      )}
+
+      {/* 7. Invoices */}
+      {activeTab === 'invoices' && (
+        <div className="space-y-4">
+          <div className="border-2 border-gray-100 bg-white rounded-2xl overflow-hidden shadow-sm">
+             {loadingInvoices ? (
+               <div className="p-12 text-center text-gray-500 font-bold uppercase tracking-widest text-xs">Loading Invoices...</div>
+             ) : invoices.length === 0 ? (
+               <div className="p-12 flex flex-col items-center justify-center text-center">
+                 <DollarSign className="w-12 h-12 text-gray-300 mb-4" />
+                 <h3 className="font-black text-daInfo-dark uppercase tracking-widest mb-2">No Invoices Yet</h3>
+                 <p className="text-sm text-gray-500 max-w-md">Once you successfully fund and complete a job, your payment receipts will appear here.</p>
+               </div>
+             ) : (
+               <div className="overflow-x-auto">
+                 <table className="w-full text-left border-collapse">
+                   <thead>
+                     <tr className="bg-gray-50 text-[10px] font-black uppercase tracking-widest text-gray-500 border-b border-gray-100">
+                       <th className="p-6 font-extrabold text-daInfo-dark tracking-widest">Date</th>
+                       <th className="p-6 font-extrabold text-daInfo-dark tracking-widest">Job Title</th>
+                       <th className="p-6 font-extrabold text-daInfo-dark tracking-widest">Payment ID</th>
+                       <th className="p-6 text-right font-extrabold text-daInfo-dark tracking-widest">Amount</th>
+                       <th className="p-6 text-center font-extrabold text-daInfo-dark tracking-widest">Action</th>
+                     </tr>
+                   </thead>
+                   <tbody className="divide-y divide-gray-100">
+                     {invoices.map((inv) => (
+                       <tr key={inv.paymentId} className="hover:bg-gray-50 transition-colors">
+                         <td className="p-6 text-sm font-bold text-gray-600">
+                           {new Date(inv.paidAt).toLocaleDateString()}
+                         </td>
+                         <td className="p-6 text-sm font-black text-daInfo-dark">
+                           {inv.jobTitle}
+                         </td>
+                         <td className="p-6 text-xs font-mono text-gray-500">
+                           {inv.paymentId}
+                         </td>
+                         <td className="p-6 text-sm font-black text-daInfo-dark text-right">
+                           ₹{inv.amount.toLocaleString()}
+                         </td>
+                         <td className="p-6 text-center">
+                           <button 
+                             type="button"
+                             onClick={async () => {
+                               try {
+                                 const token = localStorage.getItem('microgig_token');
+                                 const res = await fetch(`/api/payments/invoices/${inv.jobId}/download`, {
+                                   headers: { 'Authorization': `Bearer ${token}` }
+                                 });
+                                 if (res.ok) {
+                                   const blob = await res.blob();
+                                   const url = window.URL.createObjectURL(blob);
+                                   const a = document.createElement('a');
+                                   a.href = url;
+                                   a.download = `Invoice_${inv.jobTitle.replace(/[^a-zA-Z0-9-_]/g, '_').substring(0, 30)}_${inv.jobId}.pdf`;
+                                   document.body.appendChild(a);
+                                   a.click();
+                                   a.remove();
+                                   window.URL.revokeObjectURL(url);
+                                 } else {
+                                   const errData = await res.json();
+                                   alert(errData.message || 'Failed to download invoice');
+                                 }
+                               } catch (err) {
+                                 alert('Network error downloading invoice');
+                               }
+                             }}
+                             className="inline-block px-6 py-3 bg-black text-white font-black uppercase tracking-widest text-[10px] hover:bg-daInfo-dark transition-colors rounded-xl shadow-sm hover:shadow-md hover:-translate-y-0.5"
+                           >
+                             Download PDF
+                           </button>
+                         </td>
+                       </tr>
+                     ))}
+                   </tbody>
+                 </table>
+               </div>
+             )}
+          </div>
         </div>
       )}
     </div>

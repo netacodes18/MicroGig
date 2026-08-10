@@ -125,16 +125,19 @@ const { clearCachePattern } = require('../middleware/cache');
 jobSchema.post('save', async function () {
   await clearCachePattern('jobs:*');
   await clearCachePattern('analytics:*');
+  await clearCachePattern('client-stats:*');
 });
 
 jobSchema.post('deleteOne', { document: true, query: false }, async function () {
   await clearCachePattern('jobs:*');
   await clearCachePattern('analytics:*');
+  await clearCachePattern('client-stats:*');
 });
 
 jobSchema.post('findOneAndUpdate', async function () {
   await clearCachePattern('jobs:*');
   await clearCachePattern('analytics:*');
+  await clearCachePattern('client-stats:*');
 });
 
 module.exports = mongoose.model('Job', jobSchema);

@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const User = require('../models/User');
 const Job = require('../models/Job');
 
@@ -51,12 +52,46 @@ exports.updateUser = async (req, res, next) => {
       return res.status(403).json({ message: 'Not authorized to update this profile' });
     }
 
-    const { name, bio, skills, portfolio, guild } = req.body;
+    const updates = {};
+    let role = req.user.role;
+
+    if (req.body.name !== undefined) updates.name = req.body.name;
+    
+    if (req.body.role && ['client', 'freelancer'].includes(req.body.role)) {
+       // Allow updating role if it's currently missing or invalid, or if explicitly requested.
+       // Note: in a strict production environment, this might be restricted to once-only.
+       updates.role = req.body.role;
+       role = req.body.role;
+    }
+
+    if (role === 'client') {
+      // Reject freelancer-specific fields
+      const invalidFields = ['bio', 'skills', 'portfolio', 'guild'].filter(field => req.body[field] !== undefined);
+      if (invalidFields.length > 0) {
+        return res.status(400).json({ message: `Fields not allowed for client role: ${invalidFields.join(', ')}` });
+      }
+      
+      if (req.body.clientProfile) {
+        updates.clientProfile = req.body.clientProfile;
+      }
+    } else if (role === 'freelancer') {
+      // Reject client-specific fields
+      if (req.body.clientProfile !== undefined) {
+        return res.status(400).json({ message: 'Fields not allowed for freelancer role: clientProfile' });
+      }
+
+      if (req.body.bio !== undefined) updates.bio = req.body.bio;
+      if (req.body.skills !== undefined) updates.skills = req.body.skills;
+      if (req.body.portfolio !== undefined) updates.portfolio = req.body.portfolio;
+      if (req.body.guild !== undefined) updates.guild = req.body.guild;
+    }
+
     const user = await User.findByIdAndUpdate(
       req.params.id,
-      { name, bio, skills, portfolio, guild },
+      { $set: updates },
       { new: true, runValidators: true }
     ).select('-password');
+    
     if (!user) return res.status(404).json({ message: 'User not found' });
     res.json(user);
   } catch (err) { next(err); }
@@ -80,6 +115,44 @@ exports.getGuildStats = async (req, res, next) => {
     ]);
 
     res.json(stats);
+  } catch (err) { next(err); }
+};
+
+// GET /api/users/client/stats/:clientId
+exports.getClientStats = async (req, res, next) => {
+  try {
+    const { clientId } = req.params;
+    
+    // Aggregation for read-only stats
+    const stats = await Job.aggregate([
+      { $match: { poster: new mongoose.Types.ObjectId(clientId) } },
+      {
+        $group: {
+          _id: null,
+          totalJobsPosted: { $sum: 1 },
+          activePostings: {
+            $sum: {
+              $cond: [{ $in: ['$status', ['OPEN', 'APPLICATION_RECEIVED']] }, 1, 0]
+            }
+          },
+          jobsFilled: {
+            $sum: {
+              $cond: [{ $ne: ['$assignedTo', null] }, 1, 0]
+            }
+          }
+        }
+      }
+    ]);
+
+    const result = stats.length > 0 ? stats[0] : { totalJobsPosted: 0, activePostings: 0, jobsFilled: 0 };
+    const hireRate = result.totalJobsPosted > 0 ? Math.round((result.jobsFilled / result.totalJobsPosted) * 100) : 0;
+
+    res.json({
+      totalJobsPosted: result.totalJobsPosted,
+      activePostings: result.activePostings,
+      jobsFilled: result.jobsFilled,
+      hireRate
+    });
   } catch (err) { next(err); }
 };
 

@@ -94,7 +94,39 @@ const userSchema = new mongoose.Schema({
   lastLoginAt: {
     type: Date,
   },
+  clientProfile: {
+    companyName: { type: String, default: '' },
+    companyLogoUrl: { type: String, default: '' },
+    industry: { type: String, default: '' },
+    companySize: { type: String, enum: ['solo', '2-10', '11-50', '51-200', '200+', ''], default: '' },
+    companyWebsite: { type: String, default: '' },
+    aboutCompany: { type: String, default: '' },
+    hiringIndustries: [{ type: String }],
+    preferredBudgetRange: {
+      min: { type: Number, default: 0 },
+      max: { type: Number, default: 0 }
+    },
+    timezone: { type: String, default: '' },
+    isVerifiedBusiness: { type: Boolean, default: false },
+  },
 }, { timestamps: true });
+
+// Role-based field validation hook
+userSchema.pre('validate', function(next) {
+  if (this.role !== 'client') {
+    // Prevent non-clients from storing clientProfile data
+    this.clientProfile = undefined;
+  }
+  
+  if (this.role !== 'freelancer') {
+    // If we wanted to clear freelancer fields, we could do it here. 
+    // But per plan, we just reject writes if someone tries to modify them when not a freelancer.
+    // For Mongoose pre-validate, the best we can do is ensure new fields aren't added, but 
+    // existing fields won't cause validation errors since they are optional.
+    // The controller will also enforce this.
+  }
+  next();
+});
 
 // Hash password before saving
 userSchema.pre('save', async function (next) {
@@ -106,6 +138,7 @@ userSchema.pre('save', async function (next) {
 
 // Compare password method
 userSchema.methods.matchPassword = async function (enteredPassword) {
+  if (!this.password) return false;
   return await bcrypt.compare(enteredPassword, this.password);
 };
 

@@ -13,6 +13,10 @@ const client = redis.createClient({
   socket: {
     connectTimeout: REDIS_OP_TIMEOUT_MS,
     reconnectStrategy: (retries) => {
+      if (retries > 5) {
+        console.log('🛑 Redis reconnect attempts exhausted. Running in DB-only mode.');
+        return new Error('Max retries reached');
+      }
       // Reconnect progressively up to 3 seconds apart
       return Math.min(retries * 100, 3000);
     }

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Menu, X, ArrowRight } from 'lucide-react';
 import { AnimatePresence } from 'framer-motion';
@@ -9,6 +9,12 @@ import NotificationCenter from './NotificationCenter';
 export default function Navbar() {
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const { user, logout } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    await logout();
+    navigate('/login');
+  };
 
   const navLinks = [
     { name: 'FREELANCERS', path: '/freelancers' },
@@ -60,7 +66,7 @@ export default function Navbar() {
                     className="w-9 h-9 rounded-full border-2 border-gray-200 hover:border-daInfo-dark transition-colors object-cover"
                   />
                 </Link>
-                <button onClick={logout} className="text-xs font-semibold text-gray-500 hover:text-daInfo-dark tracking-widest uppercase">
+                <button onClick={handleLogout} className="text-xs font-semibold text-gray-500 hover:text-daInfo-dark tracking-widest uppercase">
                   SIGN OUT
                 </button>
               </div>
@@ -141,7 +147,7 @@ export default function Navbar() {
                       DASHBOARD
                     </Link>
                     <button 
-                      onClick={() => { logout(); setIsMobileOpen(false); }}
+                      onClick={() => { handleLogout(); setIsMobileOpen(false); }}
                       className="text-xs font-black text-red-500 uppercase tracking-widest text-left"
                     >
                       SIGN OUT <br/> (LOGOUT)
