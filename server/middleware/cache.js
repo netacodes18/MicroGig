@@ -1,4 +1,4 @@
-const { client, isRedisConnected } = require('../config/redis');
+const { cacheGet, cacheSet, clearCachePattern } = require('../config/redis');
 
 // Normalizes and sorts query parameters to ensure consistent cache keys
 const sortQueryString = (query) => {
@@ -9,19 +9,15 @@ const sortQueryString = (query) => {
   return JSON.stringify(sorted);
 };
 
-// Reusable cache middleware with fail-soft fallback to MongoDB
+// Reusable cache middleware using Circuit Breaker
 const cacheMiddleware = (durationSeconds, prefix) => {
   return async (req, res, next) => {
-    if (!isRedisConnected()) {
-      return next();
-    }
-
     try {
       const sortedQueryString = sortQueryString(req.query);
       const key = `${prefix}:${req.baseUrl + req.path}:${sortedQueryString}`;
 
-      // Query Redis for existing cached response
-      const cachedResponse = await client.get(key);
+      // Query Redis using Circuit Breaker wrapped get
+      const cachedResponse = await cacheGet(key);
       if (cachedResponse) {
         console.log(`[Cache Hit] Key: ${key}`);
         res.setHeader('X-Cache', 'HIT');
@@ -38,7 +34,7 @@ const cacheMiddleware = (durationSeconds, prefix) => {
 
         // Cache only 2xx successful responses
         if (res.statusCode >= 200 && res.statusCode < 300) {
-          client.setEx(key, durationSeconds, JSON.stringify(body))
+          cacheSet(key, JSON.stringify(body), durationSeconds)
             .catch(err => console.error(`[Redis Error] Failed to write cache key ${key}:`, err.message));
         }
 
@@ -47,52 +43,15 @@ const cacheMiddleware = (durationSeconds, prefix) => {
 
       next();
     } catch (err) {
-      console.error('[Redis Cache Middleware Exception]:', err.message);
+      // With the circuit breaker's fallback(() => null), this catch block
+      // will rarely be hit for Redis issues, but we keep it for general safety.
+      console.error('[Cache Middleware Exception]:', err.message);
       next();
     }
   };
 };
 
-// Non-blocking key deletion using SCAN and UNLINK
-const clearCachePattern = async (pattern) => {
-  if (!isRedisConnected()) {
-    return;
-  }
-
-  try {
-    let cursor = '0';
-    let deletedCount = 0;
-
-    do {
-      const reply = await client.scan(cursor, {
-        MATCH: pattern,
-        COUNT: 100
-      });
-
-      // Node-redis v4 returns scan results as an object with cursor and keys
-      cursor = String(reply.cursor);
-      const keys = reply.keys;
-
-      if (keys && keys.length > 0) {
-        // UNLINK is non-blocking on Redis main thread, falling back to DEL
-        if (typeof client.unlink === 'function') {
-          await client.unlink(keys);
-        } else {
-          await client.del(keys);
-        }
-        deletedCount += keys.length;
-      }
-    } while (cursor !== '0');
-
-    if (deletedCount > 0) {
-      console.log(`[Cache Evict] Pattern "${pattern}" evicted ${deletedCount} keys.`);
-    }
-  } catch (err) {
-    console.error(`[Redis Cache Eviction Error] Failed to clear pattern "${pattern}":`, err.message);
-  }
-};
-
 module.exports = {
   cacheMiddleware,
-  clearCachePattern
+  clearCachePattern // Re-exported so controllers don't need to change imports
 };

@@ -145,6 +145,10 @@ exports.getDashboard = async (req, res, next) => {
     const appliedJobs = await Job.find({ 'applicants.user': user._id }).populate('poster', 'name avatar');
     const assignedJobs = await Job.find({ assignedTo: user._id }).populate('poster', 'name avatar');
 
+    const Review = require('../models/Review');
+    const userReviews = await Review.find({ reviewer: user._id }).select('job');
+    const reviewedJobIds = userReviews.map(r => r.job?.toString());
+
     const history = [];
     appliedJobs.forEach(job => {
        const app = job.applicants.find(a => a.user.toString() === user._id.toString());
@@ -157,7 +161,8 @@ exports.getDashboard = async (req, res, next) => {
           date: app ? app.appliedAt : job.createdAt,
           role: 'Applicant',
           budget: job.budget.max,
-          submission: job.submission || null
+          submission: job.submission || null,
+          hasReviewed: reviewedJobIds.includes(job._id.toString())
         });
     });
 
@@ -172,11 +177,13 @@ exports.getDashboard = async (req, res, next) => {
             date: job.createdAt,
             role: 'Assigned Worker',
             budget: job.budget.max,
-            submission: job.submission || null
+            submission: job.submission || null,
+            hasReviewed: reviewedJobIds.includes(job._id.toString())
           });
        } else {
          const existing = history.find(h => h._id.toString() === job._id.toString());
          existing.role = 'Assigned Worker';
+         existing.hasReviewed = reviewedJobIds.includes(job._id.toString());
        }
     });
 

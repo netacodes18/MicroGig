@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
-import { Briefcase, Send, Paperclip, X, AlertTriangle } from 'lucide-react';
+import { Briefcase, Send, Paperclip, X, AlertTriangle, Wifi, WifiOff } from 'lucide-react';
 import { useToast } from '../ui/Toast';
 import api from '../../lib/api';
+import { getSocket } from '../../lib/socket';
 
 export default function WorkspaceModal({ jobId, userRole, onClose, onRefresh, handlePay }) {
   const [job, setJob] = useState(null);
@@ -17,6 +18,7 @@ export default function WorkspaceModal({ jobId, userRole, onClose, onRefresh, ha
   const [disputeReason, setDisputeReason] = useState('Scope Disagreement');
   const [disputeDescription, setDisputeDescription] = useState('');
   const [disputeEvidence, setDisputeEvidence] = useState('');
+  const [socketStatus, setSocketStatus] = useState('disconnected');
   const toast = useToast();
   const chatEndRef = useRef(null);
 
@@ -36,6 +38,57 @@ export default function WorkspaceModal({ jobId, userRole, onClose, onRefresh, ha
   useEffect(() => {
     if (jobId) {
       fetchJobDetails();
+      
+      const socket = getSocket();
+      socket.connect();
+      
+      socket.emit('join-workspace', jobId);
+      setSocketStatus(socket.connected ? 'connected' : 'connecting');
+
+      const onConnect = () => {
+        setSocketStatus('connected');
+        socket.emit('join-workspace', jobId);
+        fetchJobDetails(); // Re-fetch to fill any gaps during disconnect
+      };
+      
+      const onDisconnect = () => setSocketStatus('disconnected');
+      
+      const onConnectError = () => setSocketStatus('error');
+      
+      const onSocketError = (msg) => {
+        console.error('Socket error:', msg);
+        toast.error(`Socket error: ${msg}`);
+        setSocketStatus('error');
+      };
+
+      const onNewMessage = (newMessage) => {
+        setJob((prevJob) => {
+          if (!prevJob) return prevJob;
+          // Dedupe by _id to prevent duplicate messages
+          const exists = prevJob.workspace.some(msg => msg._id === newMessage._id);
+          if (exists) return prevJob;
+          
+          return {
+            ...prevJob,
+            workspace: [...prevJob.workspace, newMessage]
+          };
+        });
+      };
+
+      socket.on('connect', onConnect);
+      socket.on('disconnect', onDisconnect);
+      socket.on('connect_error', onConnectError);
+      socket.on('error', onSocketError);
+      socket.on('new-message', onNewMessage);
+
+      return () => {
+        socket.emit('leave-workspace', jobId);
+        socket.off('connect', onConnect);
+        socket.off('disconnect', onDisconnect);
+        socket.off('connect_error', onConnectError);
+        socket.off('error', onSocketError);
+        socket.off('new-message', onNewMessage);
+      };
     }
   }, [jobId]);
 
@@ -102,10 +155,17 @@ export default function WorkspaceModal({ jobId, userRole, onClose, onRefresh, ha
       if (attachment) {
         formData.append('attachment', attachment);
       }
+      
       await api.post(`/jobs/${jobId}/workspace/message`, formData);
+      
+      // Clear inputs. The socket will push the new message into state!
       setMessageText('');
       setAttachment(null);
-      await fetchJobDetails();
+      
+      // If socket is disconnected, fallback to manual fetch
+      if (socketStatus !== 'connected') {
+        await fetchJobDetails();
+      }
     } catch (err) {
       toast.error('Failed to post message.');
       console.error(err);
@@ -225,8 +285,8 @@ export default function WorkspaceModal({ jobId, userRole, onClose, onRefresh, ha
         </div>
 
         {/* Timeline Progress */}
-        <div className="border-b border-gray-100 p-6 bg-gray-50/50 overflow-x-auto">
-           <div className="flex items-center justify-between min-w-[600px] px-4">
+        <div className="border-b border-gray-100 p-6 bg-gray-50/50">
+           <div className="flex items-center justify-between w-full px-4">
              {stages.map((stage, idx) => {
                const isActive = idx <= currentStageIdx;
                const isCurrent = idx === currentStageIdx;
@@ -354,9 +414,20 @@ export default function WorkspaceModal({ jobId, userRole, onClose, onRefresh, ha
             </div>
 
            {/* Right Column: Chat/Updates Log */}
-           <div className="flex-1 flex flex-col bg-gray-50/40 h-[350px] md:h-auto overflow-hidden">
-              <div className="bg-white border-b border-gray-100 p-4.5 text-left">
+           <div className="flex-1 flex flex-col bg-gray-50/40 h-[350px] md:h-auto overflow-hidden relative">
+              <div className="bg-white border-b border-gray-100 p-4.5 text-left flex justify-between items-center z-10">
                  <h4 className="text-xs font-bold uppercase tracking-widest text-daInfo-dark">Project Timeline Logs & Chat</h4>
+                 
+                 {/* Socket Connection Status Indicator */}
+                 {socketStatus === 'connected' ? (
+                   <span className="flex items-center gap-1 text-[9px] font-bold uppercase tracking-widest text-emerald-600 bg-emerald-50 px-2 py-1 rounded-md border border-emerald-100" title="Real-time chat is active">
+                     <Wifi className="w-3 h-3" /> Live
+                   </span>
+                 ) : (
+                   <span className="flex items-center gap-1 text-[9px] font-bold uppercase tracking-widest text-amber-600 bg-amber-50 px-2 py-1 rounded-md border border-amber-100" title="Updates may be delayed">
+                     <WifiOff className="w-3 h-3" /> Offline (Polling)
+                   </span>
+                 )}
               </div>
 
               <div className="flex-1 p-6 overflow-y-auto space-y-4 flex flex-col">
@@ -364,7 +435,7 @@ export default function WorkspaceModal({ jobId, userRole, onClose, onRefresh, ha
                    job.workspace.map((w, idx) => {
                      const isSenderMe = w.sender?._id?.toString() === (isClient ? job.poster?._id || job.poster : job.assignedTo?._id || job.assignedTo);
                      return (
-                       <div key={idx} className={`max-w-[80%] p-4 border text-left text-xs rounded-2xl ${
+                       <div key={w._id || idx} className={`max-w-[80%] p-4 border text-left text-xs rounded-2xl ${
                          isSenderMe 
                          ? 'bg-daInfo-dark text-white self-end rounded-tr-none shadow-sm border-transparent' 
                          : 'bg-white text-gray-800 border-gray-100 self-start rounded-tl-none shadow-sm'

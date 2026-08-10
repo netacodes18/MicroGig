@@ -431,14 +431,28 @@ exports.postWorkspaceMessage = async (req, res, next) => {
       });
     }
 
-    job.workspace.push({
+    const newMessageObj = {
       sender: req.user._id,
       text: text || 'Uploaded a file',
       attachments,
       createdAt: new Date()
-    });
+    };
+
+    job.workspace.push(newMessageObj);
 
     await job.save();
+    
+    // Broadcast message via WebSockets
+    try {
+      const io = req.app.get('io');
+      if (io) {
+        // Because MongoDB adds an _id to subdocuments, we can fetch the last item to get the _id
+        const savedMessage = job.workspace[job.workspace.length - 1];
+        io.to(job._id.toString()).emit('new-message', savedMessage);
+      }
+    } catch (wsErr) {
+      console.error('[WebSockets] Failed to emit new-message:', wsErr);
+    }
     
     // Notify other party
     const recipient = isPoster ? job.assignedTo : job.poster;
