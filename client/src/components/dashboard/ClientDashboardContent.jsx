@@ -11,6 +11,11 @@ export default function ClientDashboardContent({ data, formatDate, actionLoading
 
   useEffect(() => {
     fetchInvoices();
+    const params = new URLSearchParams(window.location.search);
+    const tabParam = params.get('tab');
+    if (tabParam && ['posted-jobs', 'applicants', 'active-projects', 'submitted-work', 'payments', 'completed-projects', 'invoices'].includes(tabParam)) {
+      setActiveTab(tabParam);
+    }
   }, []);
 
   const fetchInvoices = async () => {
