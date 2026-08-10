@@ -14,7 +14,8 @@ const cacheMiddleware = (durationSeconds, prefix) => {
   return async (req, res, next) => {
     try {
       const sortedQueryString = sortQueryString(req.query);
-      const key = `${prefix}:${req.baseUrl + req.path}:${sortedQueryString}`;
+      const userTag = req.user?._id ? `:u:${req.user._id}` : '';
+      const key = `${prefix}:${req.baseUrl + req.path}${userTag}:${sortedQueryString}`;
 
       // Query Redis using Circuit Breaker wrapped get
       const cachedResponse = await cacheGet(key);
