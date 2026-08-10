@@ -3,7 +3,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import {
   Briefcase, Activity, CheckCircle,
   Settings as SettingsIcon, Calendar,
-  Github, Linkedin, Globe
+  Github, Linkedin, Globe, CreditCard
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../components/ui/Toast';
@@ -366,7 +366,12 @@ export default function Dashboard() {
                 <SettingsIcon className="w-4 h-4" /> SETTINGS
               </Link>
               {isClient ? (
-                <Link to="/jobs/new" className="flex-1 sm:flex-none da-btn-outline bg-daInfo-dark text-white text-center justify-center">POST A GIG</Link>
+                <>
+                  <Link to="/dashboard?view=billing" className="flex-1 sm:flex-none da-btn-outline flex items-center justify-center gap-2">
+                    <CreditCard className="w-4 h-4" /> BILLING & INVOICES
+                  </Link>
+                  <Link to="/jobs/new" className="flex-1 sm:flex-none da-btn-outline bg-daInfo-dark text-white text-center justify-center">POST A GIG</Link>
+                </>
               ) : (
                 <Link to="/jobs" className="flex-1 sm:flex-none da-btn-outline text-center justify-center">BROWSE DOMAINS</Link>
               )}
