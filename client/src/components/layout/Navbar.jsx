@@ -14,9 +14,10 @@ export default function Navbar() {
     { name: 'FREELANCERS', path: '/freelancers' },
     { name: 'ABOUT US', path: '/about' },
     { name: user?.role === 'client' ? 'YOUR POSTINGS' : 'DOMAINS', path: '/jobs' },
+    user?.role === 'admin' && { name: 'ADMIN PORTAL', path: '/admin' },
     { name: 'TESTIMONIALS', path: '/#testimonials' },
     { name: 'CONTACT US', path: '/contact' },
-  ];
+  ].filter(Boolean);
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-200">

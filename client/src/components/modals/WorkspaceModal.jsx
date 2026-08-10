@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Briefcase, Send, Paperclip, X } from 'lucide-react';
+import { Briefcase, Send, Paperclip, X, AlertTriangle } from 'lucide-react';
 import { useToast } from '../ui/Toast';
 import api from '../../lib/api';
 
@@ -13,6 +13,10 @@ export default function WorkspaceModal({ jobId, userRole, onClose, onRefresh, ha
   const [submitContent, setSubmitContent] = useState('');
   const [showRevisionForm, setShowRevisionForm] = useState(false);
   const [revisionFeedback, setRevisionFeedback] = useState('');
+  const [showDisputeForm, setShowDisputeForm] = useState(false);
+  const [disputeReason, setDisputeReason] = useState('Scope Disagreement');
+  const [disputeDescription, setDisputeDescription] = useState('');
+  const [disputeEvidence, setDisputeEvidence] = useState('');
   const toast = useToast();
   const chatEndRef = useRef(null);
 
@@ -162,6 +166,32 @@ export default function WorkspaceModal({ jobId, userRole, onClose, onRefresh, ha
       if (onRefresh) onRefresh();
     } catch (err) {
       toast.error('Failed to request revision.');
+      console.error(err);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleRaiseDispute = async () => {
+    if (!disputeDescription.trim()) {
+      toast.warning('Please enter details describing the dispute.');
+      return;
+    }
+    setSubmitting(true);
+    try {
+      await api.post(`/jobs/${jobId}/dispute`, {
+        reason: disputeReason,
+        description: disputeDescription,
+        evidenceUrls: disputeEvidence ? [disputeEvidence] : []
+      });
+      setDisputeDescription('');
+      setDisputeEvidence('');
+      setShowDisputeForm(false);
+      toast.success('Dispute raised successfully! Platform administrators have been notified.');
+      await fetchJobDetails();
+      if (onRefresh) onRefresh();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to raise dispute.');
       console.error(err);
     } finally {
       setSubmitting(false);
@@ -470,6 +500,66 @@ export default function WorkspaceModal({ jobId, userRole, onClose, onRefresh, ha
              </div>
            )}
 
+           {showDisputeForm && (
+             <div className="border border-red-150 p-5 rounded-2xl bg-red-50/20 text-left animate-scale-in shadow-inner">
+                <div className="flex items-center gap-2 mb-3 text-red-700">
+                  <AlertTriangle className="w-5 h-5" />
+                  <h4 className="text-xs font-bold uppercase tracking-widest">Raise Platform Dispute</h4>
+                </div>
+                <div className="space-y-4 mb-4">
+                  <div>
+                    <label className="block text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-1.5">Reason for Dispute</label>
+                    <select
+                      value={disputeReason}
+                      onChange={(e) => setDisputeReason(e.target.value)}
+                      className="w-full p-3 border border-gray-200 rounded-xl outline-none font-bold text-xs bg-white focus:border-red-500"
+                    >
+                      <option value="Scope Disagreement">Scope Disagreement</option>
+                      <option value="Unresponsive Party">Unresponsive Party</option>
+                      <option value="Payment Contested">Payment Contested</option>
+                      <option value="Work Quality Issues">Work Quality Issues</option>
+                      <option value="Other">Other / Miscellaneous</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-1.5">Description & Evidence</label>
+                    <textarea 
+                      rows="3"
+                      placeholder="Explain details of the dispute and what you want resolved..."
+                      value={disputeDescription}
+                      onChange={(e) => setDisputeDescription(e.target.value)}
+                      className="w-full p-4 border border-gray-200 rounded-xl focus:border-red-500 outline-none font-medium text-xs resize-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-1.5">Evidence Link (Optional)</label>
+                    <input 
+                      type="text"
+                      placeholder="Paste link to Google Drive, Dropbox, screenshots, etc..."
+                      value={disputeEvidence}
+                      onChange={(e) => setDisputeEvidence(e.target.value)}
+                      className="w-full p-3 border border-gray-200 rounded-xl focus:border-red-500 outline-none font-medium text-xs"
+                    />
+                  </div>
+                </div>
+                <div className="flex gap-4">
+                   <button 
+                     onClick={handleRaiseDispute}
+                     disabled={submitting}
+                     className="bg-red-600 hover:bg-red-700 text-white text-xs font-bold uppercase tracking-widest py-3.5 px-6 rounded-xl transition-all duration-200 hover:-translate-y-0.5 flex-1 justify-center flex items-center"
+                   >
+                      SUBMIT DISPUTE TO ADMINS
+                   </button>
+                   <button 
+                     onClick={() => setShowDisputeForm(false)}
+                     className="bg-white hover:bg-gray-50 text-gray-700 border border-gray-200 text-xs font-bold uppercase tracking-widest py-3.5 px-6 rounded-xl transition-all duration-200 hover:-translate-y-0.5 flex items-center justify-center"
+                   >
+                      CANCEL
+                   </button>
+                </div>
+             </div>
+           )}
+
            {/* Primary Stage Actions */}
            <div className="flex flex-wrap gap-4 items-center justify-between">
               <div className="text-xs font-bold uppercase tracking-widest text-gray-400">
@@ -517,6 +607,19 @@ export default function WorkspaceModal({ jobId, userRole, onClose, onRefresh, ha
                        RELEASE PAYMENT (₹{job.budget?.max})
                     </button>
                  )}
+
+                  {job.status !== 'COMPLETED' && job.status !== 'REFUNDED' && job.status !== 'DISPUTED' && !showDisputeForm && (
+                     <button 
+                       onClick={() => {
+                         setShowSubmitForm(false);
+                         setShowRevisionForm(false);
+                         setShowDisputeForm(true);
+                       }}
+                       className="bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-100 text-xs font-bold uppercase tracking-widest py-4 px-6 rounded-xl transition-all duration-200 hover:-translate-y-0.5 flex items-center justify-center gap-1.5 font-bold"
+                     >
+                        <AlertTriangle className="w-4 h-4" /> RAISE DISPUTE
+                     </button>
+                  )}
 
                  <button 
                    onClick={onClose}

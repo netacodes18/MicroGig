@@ -3,6 +3,28 @@ import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Bell, Check, ArrowRight, Briefcase, CheckCircle2, Inbox } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import api from '../lib/api';
+
+const getAction = (notif) => {
+  switch (notif.type) {
+    case 'submission': return 'REVIEW WORK';
+    case 'apply': return 'MANAGE GIG';
+    case 'hire': return 'MY DASHBOARD';
+    case 'payment': return 'VIEW EARNINGS';
+    case 'acceptance': return 'PROCEED TO PAY';
+    default: return 'VIEW GIG';
+  }
+};
+
+const getTypeColor = (type) => {
+  switch (type) {
+    case 'payment': return 'bg-daInfo-green';
+    case 'hire': return 'bg-daInfo-blue';
+    case 'submission': return 'bg-daInfo-pink';
+    case 'apply': return 'bg-daInfo-dark';
+    default: return 'bg-gray-400';
+  }
+};
 
 export default function Notifications() {
   const { user } = useAuth();
@@ -10,50 +32,44 @@ export default function Notifications() {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetchNotifications();
-  }, []);
-
-  const fetchNotifications = async () => {
+  const fetchNotifications = async (isMounted) => {
     try {
-      const token = localStorage.getItem('microgig_token');
-      const res = await fetch('/api/notifications', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setNotifications(data);
+      const res = await api.get('/notifications');
+      if (isMounted) {
+        setNotifications(res.data);
       }
     } catch (err) {
-      console.error(err);
+      console.error('Failed to load notifications:', err);
     } finally {
-      setLoading(false);
+      if (isMounted) {
+        setLoading(false);
+      }
     }
   };
 
+  useEffect(() => {
+    let isMounted = true;
+    fetchNotifications(isMounted);
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   const markRead = async (id) => {
     try {
-      const token = localStorage.getItem('microgig_token');
-      await fetch(`/api/notifications/${id}/read`, {
-        method: 'PUT',
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      await api.put(`/notifications/${id}/read`);
       setNotifications(prev => prev.map(n => n._id === id ? { ...n, isRead: true } : n));
     } catch (err) {
-      console.error(err);
+      console.error('Failed to mark notification as read:', err);
     }
   };
 
   const markAllRead = async () => {
     try {
-      const token = localStorage.getItem('microgig_token');
-      await fetch('/api/notifications/read-all', {
-        method: 'PUT',
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      await api.put('/notifications/read-all');
       setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
     } catch (err) {
-      console.error(err);
+      console.error('Failed to mark all notifications as read:', err);
     }
   };
 
@@ -106,28 +122,6 @@ export default function Notifications() {
         ) : (
           <div className="space-y-4">
             {notifications.map((n) => {
-              // Contextual Action Mapping
-              const getAction = (notif) => {
-                switch(notif.type) {
-                  case 'submission': return 'REVIEW WORK';
-                  case 'apply': return 'MANAGE GIG';
-                  case 'hire': return 'MY DASHBOARD';
-                  case 'payment': return 'VIEW EARNINGS';
-                  case 'acceptance': return 'PROCEED TO PAY';
-                  default: return 'VIEW GIG';
-                }
-              };
-
-              const getTypeColor = (type) => {
-                switch(type) {
-                  case 'payment': return 'bg-daInfo-green';
-                  case 'hire': return 'bg-daInfo-blue';
-                  case 'submission': return 'bg-daInfo-pink';
-                  case 'apply': return 'bg-daInfo-dark';
-                  default: return 'bg-gray-400';
-                }
-              };
-
               return (
                 <motion.div 
                   key={n._id} 

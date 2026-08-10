@@ -54,6 +54,7 @@ app.use('/api/jobs', require('./routes/jobs'));
 app.use('/api/reviews', require('./routes/reviews'));
 app.use('/api/notifications', require('./routes/notifications'));
 app.use('/api/payments', require('./routes/payments'));
+app.use('/api/admin', require('./routes/admin'));
 app.use('/api/contact', require('./routes/contact'));
 
 // Prometheus Metrics Endpoint
@@ -76,6 +77,16 @@ app.use(require('./middleware/errorHandler'));
 
 const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-});
+const startServer = async () => {
+  const { client: redisClient } = require('./config/redis');
+  // Start redis connection in background so it doesn't block server startup
+  redisClient.connect().catch(err => {
+    console.error('❌ Redis failed to connect on startup, running in DB-only mode:', err.message);
+  });
+
+  app.listen(PORT, () => {
+    console.log(`🚀 Server running on port ${PORT}`);
+  });
+};
+
+startServer();

@@ -17,6 +17,7 @@ exports.register = async (req, res, next) => {
       name, email, password, dob,
       role: role || 'freelancer',
       avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${name.toLowerCase().replace(/\s/g, '')}`,
+      lastLoginAt: new Date()
     });
 
     const token = generateToken(user._id);
@@ -42,6 +43,18 @@ exports.login = async (req, res, next) => {
     if (!user || !(await user.matchPassword(password))) {
       return res.status(401).json({ message: 'Invalid email or password' });
     }
+
+    if (user.status === 'suspended' || user.status === 'banned') {
+      return res.status(403).json({
+        message: `Your account is ${user.status}. Reason: ${user.statusReason || 'No reason specified.'}`,
+        status: user.status,
+        statusReason: user.statusReason
+      });
+    }
+
+    user.lastLoginAt = new Date();
+    await user.save();
+
     const token = generateToken(user._id);
     res.cookie('microgig_token', token, {
       httpOnly: true,
@@ -101,11 +114,19 @@ exports.googleLogin = async (req, res, next) => {
     let user = await User.findOne({ email });
 
     if (user) {
+      if (user.status === 'suspended' || user.status === 'banned') {
+        return res.status(403).json({
+          message: `Your account is ${user.status}. Reason: ${user.statusReason || 'No reason specified.'}`,
+          status: user.status,
+          statusReason: user.statusReason
+        });
+      }
       // If user exists but doesn't have googleId, link it
       if (!user.googleId) {
         user.googleId = googleId;
-        await user.save();
       }
+      user.lastLoginAt = new Date();
+      await user.save();
     } else {
       // Create new user
       user = await User.create({
@@ -113,7 +134,8 @@ exports.googleLogin = async (req, res, next) => {
         email,
         googleId,
         avatar,
-        role: role || 'freelancer'
+        role: role || 'freelancer',
+        lastLoginAt: new Date()
       });
     }
 

@@ -142,3 +142,75 @@ exports.verifyPayment = async (req, res, next) => {
     next(err);
   }
 };
+
+// Helper to refund client payment via Razorpay (called by admin controller)
+exports.refundClientPayment = async (jobId, amount) => {
+  const job = await Job.findById(jobId);
+  if (!job) throw new Error('Job not found');
+
+  // If there are payment details (the client paid)
+  if (job.paymentDetails && job.paymentDetails.paymentId) {
+    if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
+      throw new Error('Payment gateway configuration missing.');
+    }
+    const razorpay = new Razorpay({
+      key_id: process.env.RAZORPAY_KEY_ID,
+      key_secret: process.env.RAZORPAY_KEY_SECRET
+    });
+
+    // Refund order
+    await razorpay.payments.refund(job.paymentDetails.paymentId, {
+      amount: amount * 100 // in paise
+    });
+  }
+  
+  // Update Job Status
+  job.status = 'REFUNDED';
+  job.paymentStatus = 'REFUNDED';
+  job.statusHistory.push({
+    status: 'REFUNDED',
+    timestamp: new Date()
+  });
+  
+  job.workspace.push({
+    sender: null,
+    text: `[DISPUTE RESOLVED] Refund of ₹${amount} initiated to the client. Job marked REFUNDED.`,
+    createdAt: new Date()
+  });
+
+  await job.save();
+};
+
+// Helper to release milestone payment via Razorpay (called by admin controller)
+exports.releaseMilestonePayment = async (jobId) => {
+  const job = await Job.findById(jobId);
+  if (!job) throw new Error('Job not found');
+
+  // Update Job Status to COMPLETED & Payment released
+  job.status = 'COMPLETED';
+  job.paymentStatus = 'RELEASED';
+  job.isFunded = true;
+  job.statusHistory.push({
+    status: 'COMPLETED',
+    timestamp: new Date()
+  });
+
+  job.workspace.push({
+    sender: null,
+    text: `[DISPUTE RESOLVED] Platform Admin released the payment of ₹${job.budget.max} to the freelancer. Job marked COMPLETED.`,
+    createdAt: new Date()
+  });
+
+  await job.save();
+
+  // Update Freelancer earnings
+  const targetFreelancerId = job.assignedTo;
+  if (targetFreelancerId) {
+    const freelancer = await User.findById(targetFreelancerId);
+    if (freelancer) {
+      freelancer.totalEarnings = (freelancer.totalEarnings || 0) + (job.budget.max || 0);
+      freelancer.completedGigs = (freelancer.completedGigs || 0) + 1;
+      await freelancer.save();
+    }
+  }
+};

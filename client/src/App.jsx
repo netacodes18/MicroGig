@@ -17,6 +17,7 @@ const Notifications = lazy(() => import('./pages/Notifications'));
 const PostJob = lazy(() => import('./pages/PostJob'));
 const Settings = lazy(() => import('./pages/Settings'));
 const NotFound = lazy(() => import('./pages/NotFound'));
+const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
 
 // Loading Page Component
 const PageLoading = () => (
@@ -28,7 +29,7 @@ const PageLoading = () => (
 
 function Layout() {
   const location = useLocation();
-  const hideFooter = location.pathname === '/login' || location.pathname === '/signup' || location.pathname === '/dashboard' || location.pathname === '/jobs/new' || location.pathname === '/settings' || location.pathname === '/notifications';
+  const hideFooter = location.pathname === '/login' || location.pathname === '/signup' || location.pathname === '/dashboard' || location.pathname === '/jobs/new' || location.pathname === '/settings' || location.pathname === '/notifications' || location.pathname === '/admin';
 
   useEffect(() => {
     if (location.hash) {
@@ -63,6 +64,7 @@ function Layout() {
             <Route path="/contact" element={<Contact />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/notifications" element={<Notifications />} />
+            <Route path="/admin" element={<AdminDashboard />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </Suspense>

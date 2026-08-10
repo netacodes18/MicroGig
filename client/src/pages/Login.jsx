@@ -70,6 +70,25 @@ export default function Login() {
     }
   };
 
+  const handleAdminDemoLogin = async () => {
+    setEmail('admin@microgig.com');
+    setPassword('AdminPassword123');
+    setError('');
+    setLoading(true);
+    try {
+      const result = await login('admin@microgig.com', 'AdminPassword123');
+      if (result.success) {
+        navigate('/admin');
+      } else {
+        setError(result.error || 'Admin account not available.');
+      }
+    } catch (err) {
+      setError('Admin demo login failed.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen flex selection:bg-daInfo-blue selection:text-white">
       
@@ -172,13 +191,22 @@ export default function Login() {
                 Apply for an account
               </Link>
             </p>
-            <button 
-              type="button" 
-              onClick={handleDemoLogin}
-              className="text-xs font-bold text-gray-400 hover:text-gray-800 transition-colors uppercase tracking-widest border border-gray-200 px-3 py-2"
-            >
-              DEMO LOGIN
-            </button>
+            <div className="flex gap-2">
+              <button 
+                type="button" 
+                onClick={handleDemoLogin}
+                className="text-xs font-bold text-gray-400 hover:text-gray-800 transition-colors uppercase tracking-widest border border-gray-200 px-3 py-2"
+              >
+                DEMO LOGIN
+              </button>
+              <button 
+                type="button" 
+                onClick={handleAdminDemoLogin}
+                className="text-xs font-bold text-red-500 hover:text-red-750 transition-colors uppercase tracking-widest border border-red-200 bg-red-50/10 px-3 py-2"
+              >
+                DEMO ADMIN
+              </button>
+            </div>
           </div>
         </div>
       </div>
