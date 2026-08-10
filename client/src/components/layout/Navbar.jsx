@@ -20,6 +20,7 @@ export default function Navbar() {
     { name: 'FREELANCERS', path: '/freelancers' },
     { name: 'ABOUT US', path: '/about' },
     { name: user?.role === 'client' ? 'YOUR POSTINGS' : 'DOMAINS', path: '/jobs' },
+    user?.role === 'client' && { name: 'BILLING & INVOICES', path: '/dashboard?tab=invoices' },
     user?.role === 'admin' && { name: 'ADMIN PORTAL', path: '/admin' },
     { name: 'TESTIMONIALS', path: '/#testimonials' },
     { name: 'CONTACT US', path: '/contact' },

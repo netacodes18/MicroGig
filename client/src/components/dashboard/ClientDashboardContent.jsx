@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Briefcase, User, Activity, Clock, FileText, ExternalLink, DollarSign } from 'lucide-react';
+import { Briefcase, User, Activity, Clock, FileText, ExternalLink, DollarSign, Download, Search, ShieldCheck, CreditCard } from 'lucide-react';
 
 export default function ClientDashboardContent({ data, formatDate, actionLoading, handleAccept, handlePay, handleReject, handleHire, setWorkViewModal, setReviewModal, setWorkspaceModal, setManageGigModal }) {
   const { postedJobs, clientStats } = data;
@@ -8,6 +8,7 @@ export default function ClientDashboardContent({ data, formatDate, actionLoading
   const [invoices, setInvoices] = useState([]);
   const [loadingInvoices, setLoadingInvoices] = useState(false);
   const [invoiceStatus, setInvoiceStatus] = useState(null);
+  const [invoiceSearch, setInvoiceSearch] = useState('');
 
   useEffect(() => {
     fetchInvoices();
@@ -92,7 +93,7 @@ export default function ClientDashboardContent({ data, formatDate, actionLoading
     { id: 'submitted-work', label: 'Submitted Work', count: submittedWork.length },
     { id: 'payments', label: 'Payments', count: payments.length },
     { id: 'completed-projects', label: 'Completed', count: completedProjects.length },
-    { id: 'invoices', label: 'Invoices', count: invoices.length }
+    { id: 'invoices', label: 'Billing & Invoices', count: invoices.length }
   ];
 
   return (
@@ -471,86 +472,180 @@ export default function ClientDashboardContent({ data, formatDate, actionLoading
         </div>
       )}
 
-      {/* 7. Invoices */}
-      {activeTab === 'invoices' && (
-        <div className="space-y-4">
-          <div className="border-2 border-gray-100 bg-white rounded-2xl overflow-hidden shadow-sm">
-             {loadingInvoices ? (
-               <div className="p-12 text-center text-gray-500 font-bold uppercase tracking-widest text-xs">Loading Invoices...</div>
-             ) : invoices.length === 0 ? (
-               <div className="p-12 flex flex-col items-center justify-center text-center">
-                 <DollarSign className="w-12 h-12 text-gray-300 mb-4" />
-                 <h3 className="font-black text-daInfo-dark uppercase tracking-widest mb-2">No Invoices Yet</h3>
-                 <p className="text-sm text-gray-500 max-w-md">Once you successfully fund and complete a job, your payment receipts will appear here.</p>
-               </div>
-             ) : (
-               <div className="overflow-x-auto">
-                 <table className="w-full text-left border-collapse">
-                   <thead>
-                     <tr className="bg-gray-50 text-[10px] font-black uppercase tracking-widest text-gray-500 border-b border-gray-100">
-                       <th className="p-6 font-extrabold text-daInfo-dark tracking-widest">Date</th>
-                       <th className="p-6 font-extrabold text-daInfo-dark tracking-widest">Job Title</th>
-                       <th className="p-6 font-extrabold text-daInfo-dark tracking-widest">Payment ID</th>
-                       <th className="p-6 text-right font-extrabold text-daInfo-dark tracking-widest">Amount</th>
-                       <th className="p-6 text-center font-extrabold text-daInfo-dark tracking-widest">Action</th>
-                     </tr>
-                   </thead>
-                   <tbody className="divide-y divide-gray-100">
-                     {invoices.map((inv) => (
-                       <tr key={inv.paymentId} className="hover:bg-gray-50 transition-colors">
-                         <td className="p-6 text-sm font-bold text-gray-600">
-                           {new Date(inv.paidAt).toLocaleDateString()}
-                         </td>
-                         <td className="p-6 text-sm font-black text-daInfo-dark">
-                           {inv.jobTitle}
-                         </td>
-                         <td className="p-6 text-xs font-mono text-gray-500">
-                           {inv.paymentId}
-                         </td>
-                         <td className="p-6 text-sm font-black text-daInfo-dark text-right">
-                           ₹{inv.amount.toLocaleString()}
-                         </td>
-                         <td className="p-6 text-center">
-                           <button 
-                             type="button"
-                             onClick={async () => {
-                               try {
-                                 const token = localStorage.getItem('microgig_token');
-                                 const res = await fetch(`/api/payments/invoices/${inv.jobId}/download`, {
-                                   headers: { 'Authorization': `Bearer ${token}` }
-                                 });
-                                 if (res.ok) {
-                                   const blob = await res.blob();
-                                   const url = window.URL.createObjectURL(blob);
-                                   const a = document.createElement('a');
-                                   a.href = url;
-                                   a.download = `Invoice_${inv.jobTitle.replace(/[^a-zA-Z0-9-_]/g, '_').substring(0, 30)}_${inv.jobId}.pdf`;
-                                   document.body.appendChild(a);
-                                   a.click();
-                                   a.remove();
-                                   window.URL.revokeObjectURL(url);
-                                 } else {
-                                   const errData = await res.json();
-                                   alert(errData.message || 'Failed to download invoice');
-                                 }
-                               } catch (err) {
-                                 alert('Network error downloading invoice');
-                               }
-                             }}
-                             className="inline-block px-6 py-3 bg-black text-white font-black uppercase tracking-widest text-[10px] hover:bg-daInfo-dark transition-colors rounded-xl shadow-sm hover:shadow-md hover:-translate-y-0.5"
-                           >
-                             Download PDF
-                           </button>
-                         </td>
-                       </tr>
-                     ))}
-                   </tbody>
-                 </table>
-               </div>
-             )}
+      {/* 7. Billing & Invoices Hub */}
+      {activeTab === 'invoices' && (() => {
+        const totalSpent = invoices.reduce((sum, inv) => sum + (inv.amount || 0), 0);
+        const escrowPending = activeProjects.concat(submittedWork, payments).reduce((sum, job) => sum + (job.budget?.max || 0), 0);
+        const filteredInvoices = invoices.filter(inv => 
+          (inv.jobTitle || '').toLowerCase().includes(invoiceSearch.toLowerCase()) || 
+          (inv.paymentId || '').toLowerCase().includes(invoiceSearch.toLowerCase())
+        );
+
+        const handleExportCSV = () => {
+          if (invoices.length === 0) return alert('No invoices available to export.');
+          const headers = ['Date', 'Job Title', 'Payment ID', 'Amount (INR)', 'Currency'];
+          const rows = invoices.map(inv => [
+            new Date(inv.paidAt).toLocaleDateString(),
+            `"${(inv.jobTitle || '').replace(/"/g, '""')}"`,
+            inv.paymentId,
+            inv.amount,
+            inv.currency || 'INR'
+          ]);
+          const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
+          const encodedUri = encodeURI(csvContent);
+          const link = document.createElement('a');
+          link.setAttribute('href', encodedUri);
+          link.setAttribute('download', `Billing_Statement_${new Date().toISOString().slice(0,10)}.csv`);
+          document.body.appendChild(link);
+          link.click();
+          link.remove();
+        };
+
+        return (
+          <div className="space-y-8 text-left">
+            {/* Billing Summary Overview */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+              <div className="bg-gradient-to-br from-slate-900 to-black text-white p-6 rounded-2xl border border-slate-800 shadow-md flex flex-col justify-between h-36">
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Total Spent (Paid Out)</p>
+                  <p className="text-3xl font-black text-white tracking-tight mt-2">₹{totalSpent.toLocaleString()}</p>
+                </div>
+                <div className="flex items-center justify-between text-[11px] text-slate-400 font-bold uppercase tracking-wider">
+                  <span>{invoices.length} Settled Transactions</span>
+                  <DollarSign className="w-5 h-5 text-emerald-400" />
+                </div>
+              </div>
+
+              <div className="bg-gradient-to-br from-emerald-950/20 to-teal-950/20 p-6 rounded-2xl border border-emerald-100 shadow-sm flex flex-col justify-between h-36">
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-emerald-700">Escrow Committed</p>
+                  <p className="text-3xl font-black text-emerald-950 tracking-tight mt-2">₹{escrowPending.toLocaleString()}</p>
+                </div>
+                <div className="flex items-center justify-between text-[11px] text-emerald-700 font-bold uppercase tracking-wider">
+                  <span>Protected in Escrow</span>
+                  <ShieldCheck className="w-5 h-5 text-emerald-600" />
+                </div>
+              </div>
+
+              <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex flex-col justify-between h-36">
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Payment Security</p>
+                  <p className="text-sm font-black text-daInfo-dark tracking-tight mt-2">Razorpay Encrypted SSL</p>
+                </div>
+                <div className="flex items-center justify-between text-[11px] text-gray-500 font-bold uppercase tracking-wider">
+                  <span>Instant PDF Generation</span>
+                  <CreditCard className="w-5 h-5 text-indigo-500" />
+                </div>
+              </div>
+            </div>
+
+            {/* Filter & Export Action Bar */}
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-gray-50/50 p-4 rounded-2xl border border-gray-100">
+              <div className="relative w-full sm:w-80">
+                <Search className="w-4 h-4 text-gray-400 absolute left-4 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  value={invoiceSearch}
+                  onChange={(e) => setInvoiceSearch(e.target.value)}
+                  placeholder="Search by gig title or payment ID..."
+                  className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl text-xs font-semibold focus:outline-none focus:border-black transition-colors"
+                />
+              </div>
+              <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
+                <button
+                  onClick={handleExportCSV}
+                  className="px-5 py-2.5 bg-white hover:bg-gray-100 text-daInfo-dark border border-gray-200 font-bold uppercase tracking-widest text-[10px] rounded-xl transition-all shadow-sm flex items-center gap-2"
+                >
+                  <Download className="w-3.5 h-3.5" /> EXPORT CSV
+                </button>
+              </div>
+            </div>
+
+            {/* Invoices Table */}
+            <div className="border border-gray-100 bg-white rounded-2xl overflow-hidden shadow-sm">
+              {loadingInvoices ? (
+                <div className="p-12 text-center text-gray-500 font-bold uppercase tracking-widest text-xs">Loading Invoices & Receipts...</div>
+              ) : filteredInvoices.length === 0 ? (
+                <div className="p-12 flex flex-col items-center justify-center text-center">
+                  <DollarSign className="w-12 h-12 text-gray-300 mb-4" />
+                  <h3 className="font-black text-daInfo-dark uppercase tracking-widest mb-2">No Matching Invoices Found</h3>
+                  <p className="text-sm text-gray-500 max-w-md">Once you complete jobs and release escrow payments, your tax receipts and PDF invoices will appear here.</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="bg-gray-50/80 text-[10px] font-black uppercase tracking-widest text-gray-500 border-b border-gray-100">
+                        <th className="p-5 font-extrabold text-daInfo-dark">Date</th>
+                        <th className="p-5 font-extrabold text-daInfo-dark">Gig Title</th>
+                        <th className="p-5 font-extrabold text-daInfo-dark">Payment Reference</th>
+                        <th className="p-5 font-extrabold text-daInfo-dark">Status</th>
+                        <th className="p-5 text-right font-extrabold text-daInfo-dark">Amount</th>
+                        <th className="p-5 text-center font-extrabold text-daInfo-dark">Receipt</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {filteredInvoices.map((inv) => (
+                        <tr key={inv.paymentId} className="hover:bg-gray-50/60 transition-colors">
+                          <td className="p-5 text-xs font-bold text-gray-600">
+                            {new Date(inv.paidAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                          </td>
+                          <td className="p-5 text-sm font-black text-daInfo-dark">
+                            {inv.jobTitle}
+                          </td>
+                          <td className="p-5 text-xs font-mono text-gray-500">
+                            {inv.paymentId}
+                          </td>
+                          <td className="p-5">
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-100 font-bold uppercase tracking-wider text-[9px]">
+                              <ShieldCheck className="w-3 h-3" /> RELEASED
+                            </span>
+                          </td>
+                          <td className="p-5 text-sm font-black text-daInfo-dark text-right">
+                            ₹{inv.amount.toLocaleString()}
+                          </td>
+                          <td className="p-5 text-center">
+                            <button 
+                              type="button"
+                              onClick={async () => {
+                                try {
+                                  const token = localStorage.getItem('microgig_token');
+                                  const res = await fetch(`/api/payments/invoices/${inv.jobId}/download`, {
+                                    headers: { 'Authorization': `Bearer ${token}` }
+                                  });
+                                  if (res.ok) {
+                                    const blob = await res.blob();
+                                    const url = window.URL.createObjectURL(blob);
+                                    const a = document.createElement('a');
+                                    a.href = url;
+                                    a.download = `Invoice_${inv.jobTitle.replace(/[^a-zA-Z0-9-_]/g, '_').substring(0, 30)}_${inv.jobId}.pdf`;
+                                    document.body.appendChild(a);
+                                    a.click();
+                                    a.remove();
+                                    window.URL.revokeObjectURL(url);
+                                  } else {
+                                    const errData = await res.json();
+                                    alert(errData.message || 'Failed to download invoice');
+                                  }
+                                } catch (err) {
+                                  alert('Network error downloading invoice');
+                                }
+                              }}
+                              className="inline-flex items-center gap-1.5 px-5 py-2.5 bg-black hover:bg-daInfo-dark text-white font-black uppercase tracking-widest text-[9px] transition-all rounded-xl shadow-sm hover:shadow hover:-translate-y-0.5"
+                            >
+                              <Download className="w-3 h-3" /> DOWNLOAD PDF
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
     </div>
   );
 }
