@@ -121,7 +121,7 @@ export default function ClientDashboardContent({ data, formatDate, actionLoading
       </div>
 
       {/* Tabs Menu */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2 bg-gray-50 p-1.5 rounded-2xl border border-gray-100 w-full">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-2 bg-gray-50 p-1.5 rounded-2xl border border-gray-100 w-full">
         {tabs.map(t => (
           <button
             key={t.id}
