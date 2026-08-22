@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
-import { Briefcase, Send, Paperclip, X } from 'lucide-react';
+import { Briefcase, Send, Paperclip, X, AlertTriangle, Wifi, WifiOff } from 'lucide-react';
 import { useToast } from '../ui/Toast';
 import api from '../../lib/api';
+import { getSocket } from '../../lib/socket';
 
 export default function WorkspaceModal({ jobId, userRole, onClose, onRefresh, handlePay }) {
   const [job, setJob] = useState(null);
@@ -13,6 +14,11 @@ export default function WorkspaceModal({ jobId, userRole, onClose, onRefresh, ha
   const [submitContent, setSubmitContent] = useState('');
   const [showRevisionForm, setShowRevisionForm] = useState(false);
   const [revisionFeedback, setRevisionFeedback] = useState('');
+  const [showDisputeForm, setShowDisputeForm] = useState(false);
+  const [disputeReason, setDisputeReason] = useState('Scope Disagreement');
+  const [disputeDescription, setDisputeDescription] = useState('');
+  const [disputeEvidence, setDisputeEvidence] = useState('');
+  const [socketStatus, setSocketStatus] = useState('disconnected');
   const toast = useToast();
   const chatEndRef = useRef(null);
 
@@ -23,6 +29,7 @@ export default function WorkspaceModal({ jobId, userRole, onClose, onRefresh, ha
     } catch (err) {
       toast.error('Failed to load workspace details.');
       console.error(err);
+      if (onClose) onClose();
     } finally {
       setLoading(false);
     }
@@ -31,6 +38,57 @@ export default function WorkspaceModal({ jobId, userRole, onClose, onRefresh, ha
   useEffect(() => {
     if (jobId) {
       fetchJobDetails();
+      
+      const socket = getSocket();
+      socket.connect();
+      
+      socket.emit('join-workspace', jobId);
+      setSocketStatus(socket.connected ? 'connected' : 'connecting');
+
+      const onConnect = () => {
+        setSocketStatus('connected');
+        socket.emit('join-workspace', jobId);
+        fetchJobDetails(); // Re-fetch to fill any gaps during disconnect
+      };
+      
+      const onDisconnect = () => setSocketStatus('disconnected');
+      
+      const onConnectError = () => setSocketStatus('error');
+      
+      const onSocketError = (msg) => {
+        console.error('Socket error:', msg);
+        toast.error(`Socket error: ${msg}`);
+        setSocketStatus('error');
+      };
+
+      const onNewMessage = (newMessage) => {
+        setJob((prevJob) => {
+          if (!prevJob) return prevJob;
+          // Dedupe by _id to prevent duplicate messages
+          const exists = prevJob.workspace.some(msg => msg._id === newMessage._id);
+          if (exists) return prevJob;
+          
+          return {
+            ...prevJob,
+            workspace: [...prevJob.workspace, newMessage]
+          };
+        });
+      };
+
+      socket.on('connect', onConnect);
+      socket.on('disconnect', onDisconnect);
+      socket.on('connect_error', onConnectError);
+      socket.on('error', onSocketError);
+      socket.on('new-message', onNewMessage);
+
+      return () => {
+        socket.emit('leave-workspace', jobId);
+        socket.off('connect', onConnect);
+        socket.off('disconnect', onDisconnect);
+        socket.off('connect_error', onConnectError);
+        socket.off('error', onSocketError);
+        socket.off('new-message', onNewMessage);
+      };
     }
   }, [jobId]);
 
@@ -45,6 +103,13 @@ export default function WorkspaceModal({ jobId, userRole, onClose, onRefresh, ha
       <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
         <div className="absolute inset-0 bg-gray-900/60 backdrop-blur-md" />
         <div className="relative bg-white border border-gray-100 p-8 rounded-3xl shadow-xl text-center max-w-sm w-full">
+           <button 
+             onClick={onClose} 
+             aria-label="Close workspace"
+             className="absolute top-4 right-4 p-2 text-gray-400 hover:text-gray-900 rounded-full hover:bg-gray-100 transition-colors"
+           >
+             <X className="w-4 h-4" />
+           </button>
            <div className="w-8 h-8 rounded-full border-4 border-gray-200 border-t-black animate-spin mx-auto mb-4" />
            <p className="font-bold text-xs uppercase tracking-widest text-gray-400">Loading Workspace...</p>
         </div>
@@ -90,10 +155,17 @@ export default function WorkspaceModal({ jobId, userRole, onClose, onRefresh, ha
       if (attachment) {
         formData.append('attachment', attachment);
       }
+      
       await api.post(`/jobs/${jobId}/workspace/message`, formData);
+      
+      // Clear inputs. The socket will push the new message into state!
       setMessageText('');
       setAttachment(null);
-      await fetchJobDetails();
+      
+      // If socket is disconnected, fallback to manual fetch
+      if (socketStatus !== 'connected') {
+        await fetchJobDetails();
+      }
     } catch (err) {
       toast.error('Failed to post message.');
       console.error(err);
@@ -160,6 +232,32 @@ export default function WorkspaceModal({ jobId, userRole, onClose, onRefresh, ha
     }
   };
 
+  const handleRaiseDispute = async () => {
+    if (!disputeDescription.trim()) {
+      toast.warning('Please enter details describing the dispute.');
+      return;
+    }
+    setSubmitting(true);
+    try {
+      await api.post(`/jobs/${jobId}/dispute`, {
+        reason: disputeReason,
+        description: disputeDescription,
+        evidenceUrls: disputeEvidence ? [disputeEvidence] : []
+      });
+      setDisputeDescription('');
+      setDisputeEvidence('');
+      setShowDisputeForm(false);
+      toast.success('Dispute raised successfully! Platform administrators have been notified.');
+      await fetchJobDetails();
+      if (onRefresh) onRefresh();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to raise dispute.');
+      console.error(err);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto">
       <div className="absolute inset-0 bg-gray-900/60 backdrop-blur-md" onClick={onClose} />
@@ -179,6 +277,7 @@ export default function WorkspaceModal({ jobId, userRole, onClose, onRefresh, ha
            </div>
            <button 
              onClick={onClose}
+             aria-label="Close workspace modal"
              className="p-2 bg-gray-50 text-gray-400 hover:text-gray-650 hover:bg-gray-100 rounded-xl transition-all duration-205"
            >
               <X className="w-4 h-4" />
@@ -186,8 +285,8 @@ export default function WorkspaceModal({ jobId, userRole, onClose, onRefresh, ha
         </div>
 
         {/* Timeline Progress */}
-        <div className="border-b border-gray-100 p-6 bg-gray-50/50 overflow-x-auto">
-           <div className="flex items-center justify-between min-w-[600px] px-4">
+        <div className="border-b border-gray-100 p-6 bg-gray-50/50">
+           <div className="flex items-center justify-between w-full px-4">
              {stages.map((stage, idx) => {
                const isActive = idx <= currentStageIdx;
                const isCurrent = idx === currentStageIdx;
@@ -315,9 +414,20 @@ export default function WorkspaceModal({ jobId, userRole, onClose, onRefresh, ha
             </div>
 
            {/* Right Column: Chat/Updates Log */}
-           <div className="flex-1 flex flex-col bg-gray-50/40 h-[350px] md:h-auto overflow-hidden">
-              <div className="bg-white border-b border-gray-100 p-4.5 text-left">
+           <div className="flex-1 flex flex-col bg-gray-50/40 h-[350px] md:h-auto overflow-hidden relative">
+              <div className="bg-white border-b border-gray-100 p-4.5 text-left flex justify-between items-center z-10">
                  <h4 className="text-xs font-bold uppercase tracking-widest text-daInfo-dark">Project Timeline Logs & Chat</h4>
+                 
+                 {/* Socket Connection Status Indicator */}
+                 {socketStatus === 'connected' ? (
+                   <span className="flex items-center gap-1 text-[9px] font-bold uppercase tracking-widest text-emerald-600 bg-emerald-50 px-2 py-1 rounded-md border border-emerald-100" title="Real-time chat is active">
+                     <Wifi className="w-3 h-3" /> Live
+                   </span>
+                 ) : (
+                   <span className="flex items-center gap-1 text-[9px] font-bold uppercase tracking-widest text-amber-600 bg-amber-50 px-2 py-1 rounded-md border border-amber-100" title="Updates may be delayed">
+                     <WifiOff className="w-3 h-3" /> Offline (Polling)
+                   </span>
+                 )}
               </div>
 
               <div className="flex-1 p-6 overflow-y-auto space-y-4 flex flex-col">
@@ -325,7 +435,7 @@ export default function WorkspaceModal({ jobId, userRole, onClose, onRefresh, ha
                    job.workspace.map((w, idx) => {
                      const isSenderMe = w.sender?._id?.toString() === (isClient ? job.poster?._id || job.poster : job.assignedTo?._id || job.assignedTo);
                      return (
-                       <div key={idx} className={`max-w-[80%] p-4 border text-left text-xs rounded-2xl ${
+                       <div key={w._id || idx} className={`max-w-[80%] p-4 border text-left text-xs rounded-2xl ${
                          isSenderMe 
                          ? 'bg-daInfo-dark text-white self-end rounded-tr-none shadow-sm border-transparent' 
                          : 'bg-white text-gray-800 border-gray-100 self-start rounded-tl-none shadow-sm'
@@ -392,6 +502,7 @@ export default function WorkspaceModal({ jobId, userRole, onClose, onRefresh, ha
                  <button 
                    type="submit"
                    disabled={submitting}
+                   aria-label="Send workspace message"
                    className="p-3.5 bg-daInfo-dark hover:bg-black text-white rounded-xl transition-all duration-200 hover:-translate-y-0.5 flex items-center justify-center"
                  >
                     <Send className="w-4 h-4" />
@@ -460,6 +571,66 @@ export default function WorkspaceModal({ jobId, userRole, onClose, onRefresh, ha
              </div>
            )}
 
+           {showDisputeForm && (
+             <div className="border border-red-150 p-5 rounded-2xl bg-red-50/20 text-left animate-scale-in shadow-inner">
+                <div className="flex items-center gap-2 mb-3 text-red-700">
+                  <AlertTriangle className="w-5 h-5" />
+                  <h4 className="text-xs font-bold uppercase tracking-widest">Raise Platform Dispute</h4>
+                </div>
+                <div className="space-y-4 mb-4">
+                  <div>
+                    <label className="block text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-1.5">Reason for Dispute</label>
+                    <select
+                      value={disputeReason}
+                      onChange={(e) => setDisputeReason(e.target.value)}
+                      className="w-full p-3 border border-gray-200 rounded-xl outline-none font-bold text-xs bg-white focus:border-red-500"
+                    >
+                      <option value="Scope Disagreement">Scope Disagreement</option>
+                      <option value="Unresponsive Party">Unresponsive Party</option>
+                      <option value="Payment Contested">Payment Contested</option>
+                      <option value="Work Quality Issues">Work Quality Issues</option>
+                      <option value="Other">Other / Miscellaneous</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-1.5">Description & Evidence</label>
+                    <textarea 
+                      rows="3"
+                      placeholder="Explain details of the dispute and what you want resolved..."
+                      value={disputeDescription}
+                      onChange={(e) => setDisputeDescription(e.target.value)}
+                      className="w-full p-4 border border-gray-200 rounded-xl focus:border-red-500 outline-none font-medium text-xs resize-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-1.5">Evidence Link (Optional)</label>
+                    <input 
+                      type="text"
+                      placeholder="Paste link to Google Drive, Dropbox, screenshots, etc..."
+                      value={disputeEvidence}
+                      onChange={(e) => setDisputeEvidence(e.target.value)}
+                      className="w-full p-3 border border-gray-200 rounded-xl focus:border-red-500 outline-none font-medium text-xs"
+                    />
+                  </div>
+                </div>
+                <div className="flex gap-4">
+                   <button 
+                     onClick={handleRaiseDispute}
+                     disabled={submitting}
+                     className="bg-red-600 hover:bg-red-700 text-white text-xs font-bold uppercase tracking-widest py-3.5 px-6 rounded-xl transition-all duration-200 hover:-translate-y-0.5 flex-1 justify-center flex items-center"
+                   >
+                      SUBMIT DISPUTE TO ADMINS
+                   </button>
+                   <button 
+                     onClick={() => setShowDisputeForm(false)}
+                     className="bg-white hover:bg-gray-50 text-gray-700 border border-gray-200 text-xs font-bold uppercase tracking-widest py-3.5 px-6 rounded-xl transition-all duration-200 hover:-translate-y-0.5 flex items-center justify-center"
+                   >
+                      CANCEL
+                   </button>
+                </div>
+             </div>
+           )}
+
            {/* Primary Stage Actions */}
            <div className="flex flex-wrap gap-4 items-center justify-between">
               <div className="text-xs font-bold uppercase tracking-widest text-gray-400">
@@ -507,6 +678,19 @@ export default function WorkspaceModal({ jobId, userRole, onClose, onRefresh, ha
                        RELEASE PAYMENT (₹{job.budget?.max})
                     </button>
                  )}
+
+                  {job.status !== 'COMPLETED' && job.status !== 'REFUNDED' && job.status !== 'DISPUTED' && !showDisputeForm && (
+                     <button 
+                       onClick={() => {
+                         setShowSubmitForm(false);
+                         setShowRevisionForm(false);
+                         setShowDisputeForm(true);
+                       }}
+                       className="bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-100 text-xs font-bold uppercase tracking-widest py-4 px-6 rounded-xl transition-all duration-200 hover:-translate-y-0.5 flex items-center justify-center gap-1.5 font-bold"
+                     >
+                        <AlertTriangle className="w-4 h-4" /> RAISE DISPUTE
+                     </button>
+                  )}
 
                  <button 
                    onClick={onClose}

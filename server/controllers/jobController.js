@@ -1,6 +1,7 @@
 const Job = require('../models/Job');
 const Notification = require('../models/Notification');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
+const { clearCachePattern } = require('../middleware/cache');
 
 // Initialize Gemini
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
@@ -9,13 +10,26 @@ const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
 // GET /api/jobs
 exports.getJobs = async (req, res, next) => {
   try {
-    const { category, skill, status, search, sort, minBudget, maxBudget, duration, page = 1, limit = 12 } = req.query;
+    const { category, skill, status, search, sort, minBudget, maxBudget, duration, poster, page = 1, limit = 12 } = req.query;
     let query = {};
 
     if (category) query.category = category;
     if (skill) query.skills = { $in: skill.split(',') };
-    if (status) query.status = status;
-    else query.status = 'open';
+    if (poster) {
+      const mongoose = require('mongoose');
+      if (mongoose.Types.ObjectId.isValid(poster)) {
+        query.poster = { $in: [poster, new mongoose.Types.ObjectId(poster)] };
+      } else {
+        query.poster = poster;
+      }
+    }
+
+    if (status && status !== 'all') {
+      query.status = { $regex: `^${status}$`, $options: 'i' };
+    } else if (!status && !poster) {
+      query.status = { $regex: '^(OPEN|open|APPLICATION_RECEIVED)$', $options: 'i' };
+    }
+    
     if (search) query.title = { $regex: search, $options: 'i' };
     
     // Advanced Filters
@@ -23,7 +37,7 @@ exports.getJobs = async (req, res, next) => {
     if (maxBudget) query['budget.max'] = { ...query['budget.max'], $lte: Number(maxBudget) };
     if (duration) query.duration = { $regex: duration, $options: 'i' };
 
-    const parsedLimit = parseInt(limit, 10);
+    const parsedLimit = poster ? parseInt(limit || 50, 10) : parseInt(limit, 10);
     const parsedPage = parseInt(page, 10);
     const skip = (parsedPage - 1) * parsedLimit;
 
@@ -72,6 +86,7 @@ exports.createJob = async (req, res, next) => {
         timestamp: new Date()
       }]
     });
+    await clearCachePattern('jobs:*');
     res.status(201).json(job);
   } catch (err) { next(err); }
 };
@@ -86,6 +101,7 @@ exports.updateJob = async (req, res, next) => {
 
     Object.assign(job, req.body);
     await job.save();
+    await clearCachePattern('jobs:*');
     res.json(job);
   } catch (err) { next(err); }
 };
@@ -217,6 +233,7 @@ exports.deleteJob = async (req, res, next) => {
     if (job.poster.toString() !== req.user._id.toString())
       return res.status(403).json({ message: 'Not authorized' });
     await job.deleteOne();
+    await clearCachePattern('jobs:*');
     res.json({ message: 'Job deleted' });
   } catch (err) { next(err); }
 };
@@ -414,14 +431,28 @@ exports.postWorkspaceMessage = async (req, res, next) => {
       });
     }
 
-    job.workspace.push({
+    const newMessageObj = {
       sender: req.user._id,
       text: text || 'Uploaded a file',
       attachments,
       createdAt: new Date()
-    });
+    };
+
+    job.workspace.push(newMessageObj);
 
     await job.save();
+    
+    // Broadcast message via WebSockets
+    try {
+      const io = req.app.get('io');
+      if (io) {
+        // Because MongoDB adds an _id to subdocuments, we can fetch the last item to get the _id
+        const savedMessage = job.workspace[job.workspace.length - 1];
+        io.to(job._id.toString()).emit('new-message', savedMessage);
+      }
+    } catch (wsErr) {
+      console.error('[WebSockets] Failed to emit new-message:', wsErr);
+    }
     
     // Notify other party
     const recipient = isPoster ? job.assignedTo : job.poster;
@@ -589,5 +620,86 @@ exports.rejectApplicant = async (req, res, next) => {
 
     await job.save();
     res.json({ message: 'Applicant rejected successfully', job });
+  } catch (err) { next(err); }
+};
+
+// POST /api/jobs/:id/dispute
+exports.raiseDispute = async (req, res, next) => {
+  try {
+    const Dispute = require('../models/Dispute');
+    const AuditLog = require('../models/AuditLog');
+    const job = await Job.findById(req.params.id);
+
+    if (!job) return res.status(404).json({ message: 'Job not found' });
+
+    const isPoster = job.poster.toString() === req.user._id.toString();
+    const isAssigned = job.assignedTo && job.assignedTo.toString() === req.user._id.toString();
+
+    if (!isPoster && !isAssigned) {
+      return res.status(403).json({ message: 'Not authorized to raise a dispute for this job' });
+    }
+
+    const { reason, description, evidenceUrls } = req.body;
+    if (!reason || !description) {
+      return res.status(400).json({ message: 'Reason and description are required' });
+    }
+
+    // Check if an open dispute already exists for this job
+    const existingDispute = await Dispute.findOne({ job: job._id, status: { $in: ['OPEN', 'UNDER_REVIEW'] } });
+    if (existingDispute) {
+      return res.status(400).json({ message: 'An active dispute is already open for this job' });
+    }
+
+    // Create Dispute
+    const dispute = await Dispute.create({
+      job: job._id,
+      raisedBy: req.user._id,
+      reason,
+      description,
+      evidenceUrls: evidenceUrls || [],
+      status: 'OPEN'
+    });
+
+    // Update Job Status
+    job.status = 'DISPUTED';
+    job.statusHistory.push({
+      status: 'DISPUTED',
+      changedBy: req.user._id,
+      timestamp: new Date()
+    });
+
+    // Log in workspace chat
+    job.workspace.push({
+      sender: req.user._id,
+      text: `[DISPUTE RAISED] A dispute has been filed. Reason: ${reason}. Description: ${description}`,
+      createdAt: new Date()
+    });
+
+    await job.save();
+
+    // Create AuditLog entry
+    await AuditLog.create({
+      action: 'DISPUTE_RAISED',
+      targetUser: req.user._id,
+      targetJob: job._id,
+      targetDispute: dispute._id,
+      performedBy: req.user._id,
+      reason
+    });
+
+    // Notify the other party
+    const recipientId = isPoster ? job.assignedTo : job.poster;
+    if (recipientId) {
+      const Notification = require('../models/Notification');
+      await Notification.create({
+        recipient: recipientId,
+        sender: req.user._id,
+        type: 'other',
+        job: job._id,
+        message: `A dispute has been raised on the gig "${job.title}" by the other party. Reason: ${reason}`
+      });
+    }
+
+    res.status(201).json({ message: 'Dispute raised successfully', dispute, job });
   } catch (err) { next(err); }
 };

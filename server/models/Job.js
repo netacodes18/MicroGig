@@ -114,7 +114,30 @@ const jobSchema = new mongoose.Schema({
 jobSchema.index({ category: 1, status: 1 });
 jobSchema.index({ skills: 1 });
 jobSchema.index({ poster: 1 });
+jobSchema.index({ status: 1, createdAt: -1 });
 jobSchema.index({ status: 1, 'budget.max': -1, createdAt: -1 });
 jobSchema.index({ isUrgent: -1 });
+jobSchema.index({ title: 'text', description: 'text' });
+
+// Cache invalidation hooks
+const { clearCachePattern } = require('../middleware/cache');
+
+jobSchema.post('save', async function () {
+  await clearCachePattern('jobs:*');
+  await clearCachePattern('analytics:*');
+  await clearCachePattern('client-stats:*');
+});
+
+jobSchema.post('deleteOne', { document: true, query: false }, async function () {
+  await clearCachePattern('jobs:*');
+  await clearCachePattern('analytics:*');
+  await clearCachePattern('client-stats:*');
+});
+
+jobSchema.post('findOneAndUpdate', async function () {
+  await clearCachePattern('jobs:*');
+  await clearCachePattern('analytics:*');
+  await clearCachePattern('client-stats:*');
+});
 
 module.exports = mongoose.model('Job', jobSchema);

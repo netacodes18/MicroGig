@@ -1,13 +1,14 @@
 const router = require('express').Router();
-const { getJobs, getJobById, createJob, updateJob, applyToJob, deleteJob, hireFreelancer, submitWork, acceptWork, approveWork, requestRevisions, postWorkspaceMessage, generateJobData, rejectApplicant } = require('../controllers/jobController');
+const { getJobs, getJobById, createJob, updateJob, applyToJob, deleteJob, hireFreelancer, submitWork, acceptWork, approveWork, requestRevisions, postWorkspaceMessage, generateJobData, rejectApplicant, raiseDispute } = require('../controllers/jobController');
 const protect = require('../middleware/auth');
 
 const { upload } = require('../config/cloudinary');
 
 const { body } = require('express-validator');
 const { validateRequest } = require('../middleware/validation');
+const { cacheMiddleware } = require('../middleware/cache');
 
-router.get('/', getJobs);
+router.get('/', cacheMiddleware(300, 'jobs'), getJobs);
 router.post('/generate', protect, generateJobData);
 router.get('/:id', getJobById);
 router.post('/', protect, [
@@ -46,5 +47,6 @@ router.post('/:id/workspace/message', protect, (req, res, next) => {
   });
 }, postWorkspaceMessage);
 router.delete('/:id', protect, deleteJob);
+router.post('/:id/dispute', protect, raiseDispute);
 
 module.exports = router;

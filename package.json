@@ -2,6 +2,9 @@
   "name": "gigly",
   "version": "1.0.0",
   "description": "MicroGig - Micro-internship marketplace",
+  "engines": {
+    "node": "22.x"
+  },
   "scripts": {
     "dev": "concurrently \"npm run server\" \"npm run client\"",
     "client": "cd client && npm run dev",

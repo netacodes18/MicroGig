@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Menu, X, ArrowRight } from 'lucide-react';
 import { AnimatePresence } from 'framer-motion';
@@ -9,14 +9,22 @@ import NotificationCenter from './NotificationCenter';
 export default function Navbar() {
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const { user, logout } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    await logout();
+    navigate('/login');
+  };
 
   const navLinks = [
     { name: 'FREELANCERS', path: '/freelancers' },
     { name: 'ABOUT US', path: '/about' },
     { name: user?.role === 'client' ? 'YOUR POSTINGS' : 'DOMAINS', path: '/jobs' },
+    user?.role === 'client' && { name: 'BILLING & INVOICES', path: '/dashboard?tab=invoices' },
+    user?.role === 'admin' && { name: 'ADMIN PORTAL', path: '/admin' },
     { name: 'TESTIMONIALS', path: '/#testimonials' },
     { name: 'CONTACT US', path: '/contact' },
-  ];
+  ].filter(Boolean);
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-200">
@@ -59,7 +67,7 @@ export default function Navbar() {
                     className="w-9 h-9 rounded-full border-2 border-gray-200 hover:border-daInfo-dark transition-colors object-cover"
                   />
                 </Link>
-                <button onClick={logout} className="text-xs font-semibold text-gray-500 hover:text-daInfo-dark tracking-widest uppercase">
+                <button onClick={handleLogout} className="text-xs font-semibold text-gray-500 hover:text-daInfo-dark tracking-widest uppercase">
                   SIGN OUT
                 </button>
               </div>
@@ -78,6 +86,7 @@ export default function Navbar() {
           {/* Mobile Toggle */}
           <button
             onClick={() => setIsMobileOpen(!isMobileOpen)}
+            aria-label="Toggle navigation menu"
             className="lg:hidden p-2 text-daInfo-dark"
           >
             {isMobileOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
@@ -139,7 +148,7 @@ export default function Navbar() {
                       DASHBOARD
                     </Link>
                     <button 
-                      onClick={() => { logout(); setIsMobileOpen(false); }}
+                      onClick={() => { handleLogout(); setIsMobileOpen(false); }}
                       className="text-xs font-black text-red-500 uppercase tracking-widest text-left"
                     >
                       SIGN OUT <br/> (LOGOUT)
@@ -169,6 +178,7 @@ export default function Navbar() {
             {/* Close helper */}
             <button 
               onClick={() => setIsMobileOpen(false)}
+              aria-label="Close navigation menu"
               className="absolute top-5 right-5 p-3 border-2 border-black"
             >
               <X className="w-8 h-8" />

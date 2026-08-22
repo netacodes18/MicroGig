@@ -38,3 +38,43 @@ exports.markAllAsRead = async (req, res, next) => {
     res.json({ message: 'All notifications marked as read' });
   } catch (err) { next(err); }
 };
+
+// Helper to notify both freelancer and client on dispute resolution
+exports.notifyDisputeResolved = async (dispute) => {
+  try {
+    const Job = require('../models/Job');
+    const job = await Job.findById(dispute.job);
+    if (!job) return;
+
+    const outcomeLabels = {
+      RELEASE_PAYMENT: 'Platform Admin resolved the dispute: funds have been released to the freelancer.',
+      REFUND_CLIENT: 'Platform Admin resolved the dispute: funds have been refunded to the client.',
+      SPLIT_PAYMENT: 'Platform Admin resolved the dispute: funds have been split between both parties.',
+      REJECTED: 'Platform Admin rejected the dispute. No payment action was taken.'
+    };
+
+    const outcomeText = outcomeLabels[dispute.resolutionOutcome] || 'The dispute has been resolved.';
+
+    // Notify Client
+    await Notification.create({
+      recipient: job.poster,
+      sender: dispute.resolvedBy, // admin
+      type: 'other',
+      job: job._id,
+      message: `Dispute on "${job.title}" resolved: ${outcomeText} Reason: ${dispute.resolutionReason || 'None provided.'}`
+    });
+
+    // Notify Freelancer (if assigned)
+    if (job.assignedTo) {
+      await Notification.create({
+        recipient: job.assignedTo,
+        sender: dispute.resolvedBy, // admin
+        type: 'other',
+        job: job._id,
+        message: `Dispute on "${job.title}" resolved: ${outcomeText} Reason: ${dispute.resolutionReason || 'None provided.'}`
+      });
+    }
+  } catch (err) {
+    console.error('Error creating dispute resolution notifications:', err);
+  }
+};

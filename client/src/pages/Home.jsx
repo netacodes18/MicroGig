@@ -3,11 +3,11 @@ import { Link } from 'react-router-dom';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { ArrowRight, Globe, Clock, Zap, CreditCard, Users, Star, ChevronRight } from 'lucide-react';
 
-// Custom Animated Freelancer SVG Scene
+// Custom Animated Freelancer SVG Scene - Optimized with CSS Animations
 const FreelancerAnimation = () => {
   return (
-    <div className="w-full h-full bg-[#f4b41a] flex items-center justify-center relative overflow-hidden">
-      <svg viewBox="0 0 800 600" className="w-full h-full min-w-[400px] transform scale-100 sm:scale-95">
+    <div className="w-full h-full bg-[#f4b41a] flex items-center justify-center relative overflow-hidden min-h-[360px]">
+      <svg viewBox="0 0 800 600" preserveAspectRatio="xMidYMid meet" className="w-full h-full min-w-[400px] transform scale-100 sm:scale-95">
         {/* Floor shadow */}
         <ellipse cx="400" cy="550" rx="200" ry="15" fill="rgba(0,0,0,0.1)" />
 
@@ -41,22 +41,16 @@ const FreelancerAnimation = () => {
         <rect x="420" y="190" width="180" height="130" rx="10" fill="#ecf0f1" />
         <rect x="430" y="200" width="160" height="100" rx="5" fill="#2c3e50" />
 
-        {/* Animated Code Lines */}
+        {/* Static Code Lines */}
         <g opacity="0.9">
           {[0, 1, 2, 3, 4, 5].map((i) => (
-            <motion.rect
-              key={`line1-${i}`} x="440" y={215 + i*14} width={30 + i*10} height="6" rx="3" fill={i % 2 === 0 ? "#3498db" : "#2ecc71"}
-              initial={{ width: 30 + i*10 }}
-              animate={{ width: [30 + i*10, 80 - i*5, 30 + i*10] }}
-              transition={{ duration: 2 + i*0.5, repeat: Infinity, ease: "easeInOut" }}
+            <rect
+              key={`line1-${i}`} x="440" y={215 + i*14} width={40 + (i % 3)*15} height="6" rx="3" fill={i % 2 === 0 ? "#3498db" : "#2ecc71"}
             />
           ))}
           {[0, 1, 2, 3].map((i) => (
-            <motion.rect
-              key={`line2-${i}`} x="440" y={222 + i*14} width={20 + i*5} height="6" rx="3" fill="#ecf0f1"
-              initial={{ width: 20 + i*5 }}
-              animate={{ width: [20 + i*5, 50 + i*8, 20 + i*5] }}
-              transition={{ duration: 1.5 + i*0.3, repeat: Infinity, ease: "easeInOut" }}
+            <rect
+              key={`line2-${i}`} x="440" y={222 + i*14} width={30 + (i % 2)*12} height="6" rx="3" fill="#ecf0f1"
             />
           ))}
         </g>
@@ -67,8 +61,8 @@ const FreelancerAnimation = () => {
         <polygon points="360,290 415,290 395,350 340,350" fill="#ecf0f1" />
         <polygon points="365,295 405,295 390,340 350,340" fill="#34495e" />
 
-        {/* Person Head & Animation */}
-        <motion.g animate={{ rotate: [-2, 2, -2] }} transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }} style={{ transformOrigin: "395px 260px" }}>
+        {/* Person Head & CSS Animation */}
+        <g className="animate-head-tilt">
           <rect x="382" y="250" width="26" height="30" fill="#f39c12" />
           <circle cx="395" cy="220" r="35" fill="#f1c40f" />
           <path d="M 360 220 C 360 170 430 170 430 220 L 430 190 C 430 160 360 160 360 190 Z" fill="#2c3e50" />
@@ -76,33 +70,17 @@ const FreelancerAnimation = () => {
           <rect x="415" y="210" width="16" height="10" rx="3" fill="none" stroke="#2c3e50" strokeWidth="3" />
           <line x1="406" y1="215" x2="415" y2="215" stroke="#2c3e50" strokeWidth="3" />
           <path d="M 380 230 C 370 250 370 280 380 300" stroke="#ecf0f1" strokeWidth="2" fill="none" />
-        </motion.g>
+        </g>
 
-        {/* Animated Arms / Hands */}
-        <motion.path
-          d="M 380 280 Q 340 340 330 360" stroke="#152238" strokeWidth="22" strokeLinecap="round" fill="none"
-          initial={{ d: "M 380 280 Q 340 340 330 360" }}
-          animate={{ d: ["M 380 280 Q 340 340 330 360", "M 380 280 Q 345 330 335 370"] }}
-          transition={{ duration: 0.2, repeat: Infinity, repeatType: "mirror" }}
-        />
-        <motion.path
-          d="M 400 280 Q 380 340 360 360" stroke="#0e1726" strokeWidth="22" strokeLinecap="round" fill="none"
-          initial={{ d: "M 400 280 Q 380 340 360 360" }}
-          animate={{ d: ["M 400 280 Q 380 340 360 360", "M 400 280 Q 385 335 370 365"] }}
-          transition={{ duration: 0.25, repeat: Infinity, repeatType: "mirror", delay: 0.1 }}
-        />
+        {/* Arms / Hands */}
+        <path d="M 380 280 Q 340 340 330 360" stroke="#152238" strokeWidth="22" strokeLinecap="round" fill="none" />
+        <path d="M 400 280 Q 380 340 360 360" stroke="#0e1726" strokeWidth="22" strokeLinecap="round" fill="none" />
 
         {/* Props: Coffee Mug and Steam */}
         <rect x="230" y="375" width="25" height="25" rx="3" fill="#ecf0f1" />
         <path d="M 225 385 Q 215 385 215 395 Q 215 405 230 400" stroke="#ecf0f1" strokeWidth="4" fill="none" />
-        <motion.path
-          d="M 235 365 Q 240 355 235 345" stroke="#fff" strokeWidth="3" fill="none" strokeLinecap="round" opacity="0.6"
-          animate={{ y: [0, -15], opacity: [0.6, 0] }} transition={{ duration: 1.5, repeat: Infinity, ease: "easeOut" }}
-        />
-        <motion.path
-          d="M 245 360 Q 240 350 245 340" stroke="#fff" strokeWidth="3" fill="none" strokeLinecap="round" opacity="0.6"
-          animate={{ y: [0, -15], opacity: [0.6, 0] }} transition={{ duration: 1.5, repeat: Infinity, ease: "easeOut", delay: 0.7 }}
-        />
+        <path d="M 235 365 Q 240 355 235 345" stroke="#fff" strokeWidth="3" fill="none" strokeLinecap="round" className="animate-steam-1" />
+        <path d="M 245 360 Q 240 350 245 340" stroke="#fff" strokeWidth="3" fill="none" strokeLinecap="round" className="animate-steam-2" />
 
         {/* Props: Books */}
         <rect x="580" y="385" width="50" height="15" rx="3" fill="#e74c3c" />
@@ -167,8 +145,7 @@ export default function Home() {
           setTestimonials(padded.slice(0, 3));
         }
       } catch (err) {
-        console.error('Failed to fetch home data:', err);
-        // Fallbacks are already set in initial state
+        // Fallback default state handles errors gracefully
       } finally {
         setLoading(false);
       }
@@ -185,22 +162,10 @@ export default function Home() {
     <div className="bg-white">
       {/* ══════════ HERO SECTION ══════════ */}
       <section className="pt-28 pb-24 px-4 da-grid-bg min-h-[90vh] flex flex-col justify-center items-center relative border-b border-gray-200 overflow-hidden">
-        {/* Subtle floating elements */}
-        <motion.div 
-          className="absolute top-[20%] left-[8%] w-16 h-16 border-2 border-gray-200 opacity-30"
-          animate={{ rotate: [0, 90, 180, 270, 360], y: [0, -20, 0] }}
-          transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-        />
-        <motion.div 
-          className="absolute bottom-[25%] right-[10%] w-3 h-3 bg-blue-500 rounded-full"
-          animate={{ scale: [1, 1.5, 1], opacity: [0.3, 0.7, 0.3] }}
-          transition={{ duration: 3, repeat: Infinity }}
-        />
-        <motion.div 
-          className="absolute top-[40%] right-[15%] w-8 h-8 border border-pink-300 rounded-full opacity-20"
-          animate={{ scale: [1, 1.3, 1] }}
-          transition={{ duration: 4, repeat: Infinity }}
-        />
+        {/* GPU Accelerated CSS Animations for Hero Decorative Elements */}
+        <div className="absolute top-[20%] left-[8%] w-16 h-16 border-2 border-gray-200 opacity-30 animate-spin-slow" />
+        <div className="absolute bottom-[25%] right-[10%] w-3 h-3 bg-blue-500 rounded-full animate-pulse-dot" />
+        <div className="absolute top-[40%] right-[15%] w-8 h-8 border border-pink-300 rounded-full opacity-20" />
 
         <div className="max-w-5xl mx-auto text-center relative z-10 w-full">
           <motion.div 
@@ -400,7 +365,7 @@ export default function Home() {
             initial={{ opacity: 0, x: 30 }}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
-            className="flex-1 w-full bg-gray-50 flex items-center justify-center aspect-[4/3] overflow-hidden border border-gray-200 da-shadow-black"
+            className="flex-1 w-full bg-gray-50 flex items-center justify-center aspect-[4/3] min-h-[360px] overflow-hidden border border-gray-200 da-shadow-black"
           >
             <FreelancerAnimation />
           </motion.div>
@@ -446,6 +411,9 @@ export default function Home() {
                     <img 
                       src={f.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${f.name}`} 
                       alt={f.name}
+                      width="40"
+                      height="40"
+                      loading="lazy"
                       className="w-10 h-10 border border-gray-200 bg-gray-50 object-cover"
                     />
                     <div>

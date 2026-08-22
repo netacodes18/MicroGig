@@ -149,19 +149,28 @@ export default function FreelancerDashboardContent({ profile, data, formatDate, 
                       {isAssigned && (
                          <button 
                            onClick={() => setWorkspaceModal({ shown: true, jobId: historyItem._id })}
-                           className="mr-4 text-[10px] font-black text-daInfo-blue border-b-2 border-daInfo-blue hover:text-daInfo-dark hover:border-daInfo-dark transition-all"
+                           className="whitespace-nowrap bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-bold uppercase tracking-widest px-4 py-2.5 rounded-xl transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm"
                          >
                            OPEN WORKSPACE
                          </button>
                       )}
                       
                       {statusUpper === 'COMPLETED' && (
-                         <button 
-                           onClick={() => handleReviewClient(historyItem._id, historyItem.posterId, historyItem.title)}
-                           className="mr-4 text-[10px] font-black text-green-600 border-b-2 border-green-600 hover:text-daInfo-dark hover:border-daInfo-dark transition-all"
-                         >
-                           REVIEW CLIENT
-                         </button>
+                         historyItem.hasReviewed ? (
+                           <button 
+                             disabled
+                             className="whitespace-nowrap bg-gray-200 text-gray-500 text-[10px] font-bold uppercase tracking-widest px-4 py-2.5 rounded-xl ml-2 cursor-not-allowed"
+                           >
+                             REVIEWED
+                           </button>
+                         ) : (
+                           <button 
+                             onClick={() => handleReviewClient(historyItem._id, historyItem.posterId, historyItem.title)}
+                             className="whitespace-nowrap bg-emerald-500 hover:bg-emerald-600 text-white text-[10px] font-bold uppercase tracking-widest px-4 py-2.5 rounded-xl transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm ml-2"
+                           >
+                             REVIEW CLIENT
+                           </button>
+                         )
                       )}
                       <span className="md:hidden text-xs font-bold uppercase text-gray-400 mr-2">Date:</span>
                       <Clock className="w-3 h-3" /> {formatDate(historyItem.date)}

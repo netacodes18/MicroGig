@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { 
-  Briefcase, Activity, CheckCircle, 
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import {
+  Briefcase, Activity, CheckCircle,
   Settings as SettingsIcon, Calendar,
-  Github, Linkedin, Globe
+  Github, Linkedin, Globe, CreditCard
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../components/ui/Toast';
@@ -16,10 +16,12 @@ import ReviewModal from '../components/modals/ReviewModal';
 import WorkViewModal from '../components/modals/WorkViewModal';
 import PaymentModal from '../components/modals/PaymentModal';
 import WorkspaceModal from '../components/modals/WorkspaceModal';
+import ManageGigModal from '../components/modals/ManageGigModal';
 
 export default function Dashboard() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const toast = useToast();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -28,7 +30,9 @@ export default function Dashboard() {
   const [workViewModal, setWorkViewModal] = useState({ shown: false, submission: null, title: '' });
   const [paymentModal, setPaymentModal] = useState({ shown: false, jobId: null, freelancerId: null, title: '' });
   const [workspaceModal, setWorkspaceModal] = useState({ shown: false, jobId: null });
+  const [manageGigModal, setManageGigModal] = useState({ shown: false, jobId: null });
   const [actionLoading, setActionLoading] = useState(false);
+  const manageJobConsumed = useRef(false);
 
   // Load Razorpay Script
   const loadRazorpay = () => {
@@ -42,22 +46,55 @@ export default function Dashboard() {
     });
   };
 
-  useEffect(() => {
-    if (!user) return; // wait for user
-    
-    const fetchDashboard = async () => {
-      try {
-        const { data: json } = await api.get('/users/me/dashboard');
-        setData(json);
-      } catch (err) {
-        toast.error('Failed to load dashboard data.');
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchDashboard();
+  // Extracted so it can be called from ManageGigModal's onRefresh
+  const fetchDashboard = useCallback(async () => {
+    if (!user) return;
+    try {
+      const { data: json } = await api.get('/users/me/dashboard');
+      setData(json);
+    } catch (err) {
+      console.error('Failed to load dashboard data:', err);
+      setData({
+        profile: user,
+        clientStats: { openOpenings: 0, peopleHired: 0 },
+        postedJobs: [],
+        recruitmentHistory: []
+      });
+    } finally {
+      setLoading(false);
+    }
   }, [user]);
+
+  useEffect(() => {
+    if (!user) return;
+    if (user.role === 'admin') {
+      navigate('/admin', { replace: true });
+      return;
+    }
+    fetchDashboard();
+  }, [user, fetchDashboard, navigate]);
+
+  // Force-reset body overflow on mount — Jobs page may leave it as 'hidden'
+  useEffect(() => {
+    document.body.style.overflow = 'unset';
+  }, []);
+
+  // Separate effect: consume manageJobId from location.state or query params exactly once
+  useEffect(() => {
+    if (manageJobConsumed.current) return;
+    const params = new URLSearchParams(location.search);
+    const targetJobId = location.state?.manageJobId || params.get('manageId') || params.get('jobId') || params.get('manageJobId');
+    if (targetJobId) {
+      manageJobConsumed.current = true;
+      // Clear URL params without triggering router re-render
+      window.history.replaceState({}, document.title, window.location.pathname);
+      // Clear location state if any
+      if (location.state?.manageJobId) {
+        navigate('/dashboard', { replace: true, state: {} });
+      }
+      setManageGigModal({ shown: true, jobId: targetJobId });
+    }
+  }, [location.state, location.search, navigate]);
 
   const handleSubmitWork = async () => {
     setActionLoading(true);
@@ -65,9 +102,9 @@ export default function Dashboard() {
       await api.post(`/jobs/${submissionModal.jobId}/submit`, { content: submissionModal.content });
       setSubmissionModal({ shown: false, jobId: null, content: '' });
       window.location.reload();
-    } catch (err) { 
+    } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to submit work.');
-      console.error(err); 
+      console.error(err);
     }
     finally { setActionLoading(false); }
   };
@@ -77,9 +114,9 @@ export default function Dashboard() {
     try {
       await api.post(`/jobs/${jobId}/accept`);
       window.location.reload();
-    } catch (err) { 
+    } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to accept work.');
-      console.error(err); 
+      console.error(err);
     }
     finally { setActionLoading(false); }
   };
@@ -108,9 +145,9 @@ export default function Dashboard() {
       await api.post(`/jobs/${jobId}/reject`, { applicantId: freelancerId });
       toast.success('Applicant rejected.');
       window.location.reload();
-    } catch (err) { 
+    } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to reject applicant.');
-      console.error(err); 
+      console.error(err);
     }
     finally { setActionLoading(false); }
   };
@@ -141,13 +178,13 @@ export default function Dashboard() {
         handler: async (response) => {
           // 4. Verify Payment on Backend
           try {
-              await api.post('/payments/verify', {
-                razorpay_order_id: response.razorpay_order_id,
-                razorpay_payment_id: response.razorpay_payment_id,
-                razorpay_signature: response.razorpay_signature,
-                jobId,
-                freelancerId: paymentModal.freelancerId
-              });
+            await api.post('/payments/verify', {
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature,
+              jobId,
+              freelancerId: paymentModal.freelancerId
+            });
             toast.success('Payment successful and verified!');
             setTimeout(() => window.location.reload(), 1500);
           } catch (err) {
@@ -160,19 +197,19 @@ export default function Dashboard() {
           email: user.email
         },
         theme: {
-           color: '#FF1493'
+          color: '#FF1493'
         }
       };
 
       const paymentObject = new window.Razorpay(options);
       paymentObject.open();
 
-    } catch (err) { 
-      console.error(err); 
+    } catch (err) {
+      console.error(err);
       toast.error(`Payment Error: ${err.response?.data?.message || err.message}`);
     }
-    finally { 
-      setActionLoading(false); 
+    finally {
+      setActionLoading(false);
       setPaymentModal({ shown: false, jobId: null, freelancerId: null, title: '' });
     }
   };
@@ -184,20 +221,29 @@ export default function Dashboard() {
   const handlePostReview = async () => {
     setActionLoading(true);
     try {
-      await api.post('/reviews', { 
-        job: reviewModal.jobId, 
-        reviewee: reviewModal.revieweeId, 
-        rating: reviewModal.rating, 
-        comment: reviewModal.comment 
+      await api.post('/reviews', {
+        job: reviewModal.jobId,
+        reviewee: reviewModal.revieweeId,
+        rating: reviewModal.rating,
+        comment: reviewModal.comment
       });
       setReviewModal({ shown: false, jobId: null, revieweeId: null, rating: 5, comment: '', title: '' });
       window.location.reload();
-    } catch (err) { 
+    } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to post review.');
-      console.error(err); 
+      console.error(err);
     }
     finally { setActionLoading(false); }
   };
+
+  if (authLoading || loading || !data) {
+    return (
+      <div className="min-h-screen bg-white flex flex-col items-center justify-center gap-4">
+        <div className="w-10 h-10 rounded-full border-4 border-gray-200 border-t-daInfo-dark animate-spin mx-auto" />
+        <p className="text-xs font-bold uppercase tracking-widest text-gray-400">Loading Dashboard...</p>
+      </div>
+    );
+  }
 
   if (!user) {
     return (
@@ -212,14 +258,6 @@ export default function Dashboard() {
     );
   }
 
-  if (loading || !data) {
-    return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="w-8 h-8 rounded-full border-4 border-gray-200 border-t-daInfo-dark animate-spin" />
-      </div>
-    );
-  }
-
   const { profile } = data;
   const isClient = profile.role === 'client';
 
@@ -230,7 +268,7 @@ export default function Dashboard() {
   };
 
   const dashboardProps = {
-    data, 
+    data,
     formatDate,
     actionLoading,
     setSubmissionModal,
@@ -241,78 +279,101 @@ export default function Dashboard() {
     setReviewModal,
     setWorkViewModal,
     handleReviewClient,
-    setWorkspaceModal
+    setWorkspaceModal,
+    setManageGigModal
   };
+
+  const isAnyModalOpen = submissionModal.shown || reviewModal.shown || workViewModal.shown || paymentModal.shown || workspaceModal.shown || manageGigModal.shown;
 
   return (
     <div className="min-h-screen bg-white text-left">
+      {!isAnyModalOpen && (
+        <style>{`
+          body, html {
+            overflow: auto !important;
+            overflow-y: auto !important;
+          }
+        `}</style>
+      )}
+      {isAnyModalOpen && (
+        <style>{`
+          body, html {
+            overflow: hidden !important;
+          }
+        `}</style>
+      )}
       <div className="da-grid-bg pt-32 pb-20 border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
             <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
-               <img src={profile.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${profile.name}`} alt="Profile" className="w-24 h-24 border border-gray-200 bg-gray-50 object-cover" />
-               <div className="text-center sm:text-left">
-                  <h1 className="text-4xl font-bold text-daInfo-dark tracking-tight mb-2">
-                    {profile.name}
-                  </h1>
-                  <div className="flex flex-wrap items-center justify-center sm:justify-start gap-4 text-xs font-bold uppercase tracking-widest text-gray-500">
-                    <span className="flex items-center gap-1 border border-gray-200 px-2 py-1"><CheckCircle className="w-3 h-3" /> {profile.role}</span>
-                    {profile.dob && <span className="flex items-center gap-1"><Calendar className="w-3 h-3" /> DOB: {formatDate(profile.dob)}</span>}
-                    <span className="flex items-center gap-1"><Briefcase className="w-3 h-3" /> Member since {new Date(profile.createdAt).getFullYear()}</span>
+              <img src={profile.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${profile.name}`} alt="Profile" className="w-24 h-24 border border-gray-200 bg-gray-50 object-cover" />
+              <div className="text-center sm:text-left">
+                <h1 className="text-4xl font-bold text-daInfo-dark tracking-tight mb-2">
+                  {profile.name}
+                </h1>
+                <div className="flex flex-wrap items-center justify-center sm:justify-start gap-4 text-xs font-bold uppercase tracking-widest text-gray-500">
+                  <span className="flex items-center gap-1 border border-gray-200 px-2 py-1"><CheckCircle className="w-3 h-3" /> {profile.role}</span>
+                  {profile.dob && <span className="flex items-center gap-1"><Calendar className="w-3 h-3" /> DOB: {formatDate(profile.dob)}</span>}
+                  <span className="flex items-center gap-1"><Briefcase className="w-3 h-3" /> Member since {new Date(profile.createdAt).getFullYear()}</span>
+                </div>
+                {profile.bio && (
+                  <p className="text-sm text-gray-500 mt-3 max-w-xl font-medium leading-relaxed italic">
+                    "{profile.bio}"
+                  </p>
+                )}
+                {profile.portfolio && (profile.portfolio.github || profile.portfolio.linkedin || profile.portfolio.website) && (
+                  <div className="flex items-center justify-center sm:justify-start gap-3 mt-4">
+                    {profile.portfolio.github && (
+                      <a
+                        href={profile.portfolio.github.startsWith('http') ? profile.portfolio.github : `https://${profile.portfolio.github}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="p-2 bg-gray-50 border border-gray-200 text-gray-400 hover:text-daInfo-dark hover:border-daInfo-dark hover:bg-gray-100 rounded-xl transition-all duration-200"
+                        title="GitHub Profile"
+                      >
+                        <Github className="w-4 h-4" />
+                      </a>
+                    )}
+                    {profile.portfolio.linkedin && (
+                      <a
+                        href={profile.portfolio.linkedin.startsWith('http') ? profile.portfolio.linkedin : `https://${profile.portfolio.linkedin}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="p-2 bg-gray-50 border border-gray-200 text-gray-400 hover:text-daInfo-dark hover:border-daInfo-dark hover:bg-gray-100 rounded-xl transition-all duration-200"
+                        title="LinkedIn Profile"
+                      >
+                        <Linkedin className="w-4 h-4" />
+                      </a>
+                    )}
+                    {profile.portfolio.website && (
+                      <a
+                        href={profile.portfolio.website.startsWith('http') ? profile.portfolio.website : `https://${profile.portfolio.website}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="p-2 bg-gray-50 border border-gray-200 text-gray-400 hover:text-daInfo-dark hover:border-daInfo-dark hover:bg-gray-100 rounded-xl transition-all duration-200"
+                        title="Portfolio Website"
+                      >
+                        <Globe className="w-4 h-4" />
+                      </a>
+                    )}
                   </div>
-                  {profile.bio && (
-                    <p className="text-sm text-gray-500 mt-3 max-w-xl font-medium leading-relaxed italic">
-                      "{profile.bio}"
-                    </p>
-                  )}
-                  {profile.portfolio && (profile.portfolio.github || profile.portfolio.linkedin || profile.portfolio.website) && (
-                    <div className="flex items-center justify-center sm:justify-start gap-3 mt-4">
-                       {profile.portfolio.github && (
-                         <a 
-                           href={profile.portfolio.github.startsWith('http') ? profile.portfolio.github : `https://${profile.portfolio.github}`} 
-                           target="_blank" 
-                           rel="noopener noreferrer"
-                           className="p-2 bg-gray-50 border border-gray-200 text-gray-400 hover:text-daInfo-dark hover:border-daInfo-dark hover:bg-gray-100 rounded-xl transition-all duration-200"
-                           title="GitHub Profile"
-                         >
-                            <Github className="w-4 h-4" />
-                         </a>
-                       )}
-                       {profile.portfolio.linkedin && (
-                         <a 
-                           href={profile.portfolio.linkedin.startsWith('http') ? profile.portfolio.linkedin : `https://${profile.portfolio.linkedin}`} 
-                           target="_blank" 
-                           rel="noopener noreferrer"
-                           className="p-2 bg-gray-50 border border-gray-200 text-gray-400 hover:text-daInfo-dark hover:border-daInfo-dark hover:bg-gray-100 rounded-xl transition-all duration-200"
-                           title="LinkedIn Profile"
-                         >
-                            <Linkedin className="w-4 h-4" />
-                         </a>
-                       )}
-                       {profile.portfolio.website && (
-                         <a 
-                           href={profile.portfolio.website.startsWith('http') ? profile.portfolio.website : `https://${profile.portfolio.website}`} 
-                           target="_blank" 
-                           rel="noopener noreferrer"
-                           className="p-2 bg-gray-50 border border-gray-200 text-gray-400 hover:text-daInfo-dark hover:border-daInfo-dark hover:bg-gray-100 rounded-xl transition-all duration-200"
-                           title="Portfolio Website"
-                         >
-                            <Globe className="w-4 h-4" />
-                         </a>
-                       )}
-                    </div>
-                  )}
-               </div>
+                )}
+              </div>
             </div>
-            
+
             <div className="flex flex-wrap items-center gap-4 mt-6 md:mt-0">
               <Link to="/settings" className="flex-1 sm:flex-none da-btn-outline flex items-center justify-center gap-2">
                 <SettingsIcon className="w-4 h-4" /> SETTINGS
               </Link>
               {isClient ? (
-                 <Link to="/jobs/new" className="flex-1 sm:flex-none da-btn-outline bg-daInfo-dark text-white text-center justify-center">POST A GIG</Link>
+                <>
+                  <Link to="/dashboard?view=billing" className="flex-1 sm:flex-none da-btn-outline flex items-center justify-center gap-2">
+                    <CreditCard className="w-4 h-4" /> BILLING & INVOICES
+                  </Link>
+                  <Link to="/jobs/new" className="flex-1 sm:flex-none da-btn-outline bg-daInfo-dark text-white text-center justify-center">POST A GIG</Link>
+                </>
               ) : (
-                 <Link to="/jobs" className="flex-1 sm:flex-none da-btn-outline text-center justify-center">BROWSE DOMAINS</Link>
+                <Link to="/jobs" className="flex-1 sm:flex-none da-btn-outline text-center justify-center">BROWSE DOMAINS</Link>
               )}
             </div>
           </div>
@@ -323,43 +384,52 @@ export default function Dashboard() {
         {isClient ? (
           <ClientDashboardContent {...dashboardProps} />
         ) : (
-          <FreelancerDashboardContent 
-            profile={profile} 
-            {...dashboardProps} 
+          <FreelancerDashboardContent
+            profile={profile}
+            {...dashboardProps}
           />
         )}
       </div>
 
-      <SubmissionModal 
-        shown={submissionModal.shown} 
-        jobId={submissionModal.jobId} 
-        content={submissionModal.content} 
-        setSubmissionModal={setSubmissionModal} 
-        actionLoading={actionLoading} 
-        handleSubmitWork={handleSubmitWork} 
+      <SubmissionModal
+        shown={submissionModal.shown}
+        jobId={submissionModal.jobId}
+        content={submissionModal.content}
+        setSubmissionModal={setSubmissionModal}
+        actionLoading={actionLoading}
+        handleSubmitWork={handleSubmitWork}
       />
-      <ReviewModal 
-        reviewModal={reviewModal} 
-        setReviewModal={setReviewModal} 
-        actionLoading={actionLoading} 
-        handlePostReview={handlePostReview} 
+      <ReviewModal
+        reviewModal={reviewModal}
+        setReviewModal={setReviewModal}
+        actionLoading={actionLoading}
+        handlePostReview={handlePostReview}
       />
-      <WorkViewModal 
-        workViewModal={workViewModal} 
-        setWorkViewModal={setWorkViewModal} 
+      <WorkViewModal
+        workViewModal={workViewModal}
+        setWorkViewModal={setWorkViewModal}
       />
-      <PaymentModal 
-        paymentModal={paymentModal} 
-        setPaymentModal={setPaymentModal} 
-        actionLoading={actionLoading} 
-        executePayment={executePayment} 
+      <PaymentModal
+        paymentModal={paymentModal}
+        setPaymentModal={setPaymentModal}
+        actionLoading={actionLoading}
+        executePayment={executePayment}
       />
       {workspaceModal.shown && (
-        <WorkspaceModal 
+        <WorkspaceModal
           jobId={workspaceModal.jobId}
           userRole={user.role}
           onClose={() => setWorkspaceModal({ shown: false, jobId: null })}
           onRefresh={() => window.location.reload()}
+          handlePay={handlePay}
+        />
+      )}
+      {manageGigModal.shown && (
+        <ManageGigModal
+          jobId={manageGigModal.jobId}
+          initialJob={data?.postedJobs?.find(j => String(j._id) === String(manageGigModal.jobId))}
+          onClose={() => setManageGigModal({ shown: false, jobId: null })}
+          onRefresh={fetchDashboard}
           handlePay={handlePay}
         />
       )}

@@ -17,6 +17,7 @@ exports.register = async (req, res, next) => {
       name, email, password, dob,
       role: role || 'freelancer',
       avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${name.toLowerCase().replace(/\s/g, '')}`,
+      lastLoginAt: new Date()
     });
 
     const token = generateToken(user._id);
@@ -39,9 +40,27 @@ exports.login = async (req, res, next) => {
   try {
     const { email, password } = req.body;
     const user = await User.findOne({ email }).select('+password');
-    if (!user || !(await user.matchPassword(password))) {
+    if (!user) {
       return res.status(401).json({ message: 'Invalid email or password' });
     }
+    if (!user.password && user.googleId) {
+      return res.status(401).json({ message: 'This account was created with Google. Please use the "Continue with Google" button.' });
+    }
+    if (!(await user.matchPassword(password))) {
+      return res.status(401).json({ message: 'Invalid email or password' });
+    }
+
+    if (user.status === 'suspended' || user.status === 'banned') {
+      return res.status(403).json({
+        message: `Your account is ${user.status}. Reason: ${user.statusReason || 'No reason specified.'}`,
+        status: user.status,
+        statusReason: user.statusReason
+      });
+    }
+
+    user.lastLoginAt = new Date();
+    await user.save();
+
     const token = generateToken(user._id);
     res.cookie('microgig_token', token, {
       httpOnly: true,
@@ -54,7 +73,10 @@ exports.login = async (req, res, next) => {
       token,
       user: { _id: user._id, name: user.name, email: user.email, role: user.role, avatar: user.avatar, skills: user.skills, rating: user.rating, completedGigs: user.completedGigs, totalEarnings: user.totalEarnings },
     });
-  } catch (err) { next(err); }
+  } catch (err) {
+    console.error('LOGIN ERROR:', err);
+    next(err);
+  }
 };
 
 // GET /api/auth/me
@@ -101,11 +123,19 @@ exports.googleLogin = async (req, res, next) => {
     let user = await User.findOne({ email });
 
     if (user) {
+      if (user.status === 'suspended' || user.status === 'banned') {
+        return res.status(403).json({
+          message: `Your account is ${user.status}. Reason: ${user.statusReason || 'No reason specified.'}`,
+          status: user.status,
+          statusReason: user.statusReason
+        });
+      }
       // If user exists but doesn't have googleId, link it
       if (!user.googleId) {
         user.googleId = googleId;
-        await user.save();
       }
+      user.lastLoginAt = new Date();
+      await user.save();
     } else {
       // Create new user
       user = await User.create({
@@ -113,7 +143,8 @@ exports.googleLogin = async (req, res, next) => {
         email,
         googleId,
         avatar,
-        role: role || 'freelancer'
+        role: role || 'freelancer',
+        lastLoginAt: new Date()
       });
     }
 

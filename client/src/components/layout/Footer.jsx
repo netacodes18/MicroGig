@@ -39,22 +39,22 @@ export default function Footer() {
             </p>
             <div className="flex items-center gap-4">
               {/* Minimal text-based social links */}
-              <a href="#" className="text-xs font-bold text-gray-500 hover:text-white uppercase tracking-widest transition-colors">Twitter</a>
-              <a href="#" className="text-xs font-bold text-gray-500 hover:text-white uppercase tracking-widest transition-colors">LinkedIn</a>
-              <a href="#" className="text-xs font-bold text-gray-500 hover:text-white uppercase tracking-widest transition-colors">GitHub</a>
+              <a href="#" aria-label="MicroGig Twitter" className="text-xs font-bold text-gray-400 hover:text-white uppercase tracking-widest transition-colors">Twitter</a>
+              <a href="#" aria-label="MicroGig LinkedIn" className="text-xs font-bold text-gray-400 hover:text-white uppercase tracking-widest transition-colors">LinkedIn</a>
+              <a href="#" aria-label="MicroGig GitHub" className="text-xs font-bold text-gray-400 hover:text-white uppercase tracking-widest transition-colors">GitHub</a>
             </div>
           </div>
 
           {/* Links */}
           {Object.entries(links).map(([title, items]) => (
             <div key={title}>
-              <h4 className="text-xs font-bold text-white uppercase tracking-widest mb-6">{title}</h4>
+              <h3 className="text-xs font-bold text-white uppercase tracking-widest mb-6">{title}</h3>
               <ul className="space-y-4">
                 {items.map((item) => (
                   <li key={item.name}>
                     <Link
                       to={item.path}
-                      className="text-sm text-gray-400 hover:text-white transition-colors"
+                      className="text-sm text-gray-300 hover:text-white transition-colors"
                     >
                       {item.name}
                     </Link>

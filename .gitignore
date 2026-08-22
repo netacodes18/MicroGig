@@ -11,6 +11,11 @@ dist/
 dist-ssr/
 build/
 
+# Monitoring binaries & data
+monitoring/prometheus-bin/
+monitoring/grafana-bin/
+data/
+
 # Logs
 logs/
 *.log
